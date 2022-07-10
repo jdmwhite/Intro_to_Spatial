@@ -1,0 +1,70 @@
+---
+title: "Resources"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    collapsed: false
+    number_sections: false
+    toc_depth: 4
+    theme: paper
+---
+
+### Access all lecture slides
+
+* [Slides](https://drive.google.com/drive/folders/1tj-U-fIvpd65yP8J6OoC0TrBGkAveaLa?usp=sharing)
+
+### Where to ask questions?
+* The best place to find answers to your R problems is the internet. However, finding the most appropriate answer quickly is also a skill and will improve as your understanding of R grows. 
+* So start with Google. Craft your questions to only have a few key words that may help refine your search. For example: "select columns in R" or "select columns in R dplyr" if you want something `tidyverse` related.
+* Many of your Google queries may take you to [Stackoverflow](https://stackoverflow.com). This is a community full of R users who are asking and answering all things R related. There is a very good change that your query has already been answered here.
+
+### Additional R resources
+
+#### Getting started
+
+  + [Download R](https://cran.r-project.org/)
+  + [Download R Studio](https://www.rstudio.com/products/rstudio/download/#download)
+  + [R Projects](https://www.tidyverse.org/blog/2017/12/workflow-vs-script)
+  + [Folder structures](https://intro2r.com/dir-struct.html)
+  + [File naming](https://intro2r.com/file-names.html)
+  + [Script comments](https://bookdown.org/ndphillips/YaRrr/a-brief-style-guide-commenting-and-spacing.html)
+
+#### Data wrangling
+
+  + [dplyr cheatsheet - includes all other cheat sheets](https://www.rstudio.com/resources/cheatsheets/)
+  + [more resources - blog to check out](https://towardsdatascience.com/7-data-wrangling-r-functions-for-your-next-data-science-project-in-under-5-minutes-d5a4ad55f99b)
+  + [importing data into R](https://intro2r.com/importing-data.html)
+
+#### Data visualisation
+
+  + [ggplot2 cheatsheet](https://www.maths.usyd.edu.au/u/UG/SM/STAT3022/r/current/Misc/data-visualization-2.1.pdf) 
+  + [graph inspiration](https://r-graph-gallery.com/index.html)
+  + [facets](https://ggplot2.tidyverse.org/reference/facet_grid.html)
+  + [patchwork](https://patchwork.data-imaginist.com/index.html)
+
+#### Data analysis
+
+  + [Descriptive statistics](https://b-rodrigues.github.io/modern_R/descriptive-statistics-and-data-manipulation.html#going-beyond-descriptive-statistics-and-data-manipulation)
+  + [t.test using R](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/t.test)
+  + [More descriptive statistics resources](https://www.r-bloggers.com/2021/10/descriptive-statistics-in-r-3/)
+  
+#### R Markdown & GitHub
+
+**R Markdown**
+
+* [https://bookdown.org/yihui/rmarkdown/](https://bookdown.org/yihui/rmarkdown/)
+* [R Markdown Cheatsheet](https://raw.githubusercontent.com/rstudio/cheatsheets/main/rmarkdown-2.0.pdf)
+* [R Markdown Reference Guide](https://www.rstudio.com/wp-content/uploads/2015/03/rmarkdown-reference.pdf)
+* [R Markdown lessons with RStudio](https://rmarkdown.rstudio.com/lesson-1.html)
+
+**GitHub**
+
+* [happygitwithr](https://happygitwithr.com/)
+* [GitHub and RStudio](https://resources.github.com/github-and-rstudio/)
+
+#### Understanding R errors/warnings
+
+Debugging your code is a crucial aspect of writing and editing any code/script based documents. 
+
+Take a look this page on [Common R Mistakes](https://nickch-k.github.io/DataCommSlides/Lecture_04_Common_R_Problems.html) for help to debug your code.
