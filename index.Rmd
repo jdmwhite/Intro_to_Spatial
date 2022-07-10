@@ -24,7 +24,7 @@ These worked examples will include:
 
 4. Species distribution modeling
 
-If you have not used R before, I highly recommend going over the content provided in the [Basics of R workshop]() previously run with the SAEON GSN.
+If you have not used R before, I highly recommend going over the content provided in the [Basics of R workshop](https://jdmwhite.github.io/R_Workshop/) previously run with the SAEON GSN. Basic instructions on downloading R and R Studio can be found below.
 
 ### Getting started
 
@@ -47,10 +47,6 @@ Wait for the project to deploy (this may take a couple of minutes). Once it has 
 ### Additional Resources
 
 See the [Additional Resources](https://jdmwhite.github.io/R_Workshop/Resources.html) page for lots of helpful links related to R.
-
-```{r out.width='80%', echo = FALSE}
-knitr::include_graphics("images/logo.png")
-```
 
 ```{r out.width='20%', echo = FALSE}
 knitr::include_graphics("images/GSN_logo.png")
