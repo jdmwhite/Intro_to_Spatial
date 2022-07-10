@@ -10,17 +10,21 @@ output:
 
 Note: the slides and video recordings will be added to the site once available.
 
-This short workshop for SAEON GSN will introduce you to the basics of R and go over some fundamentals that you may have previously missed. It is aimed at R beginners, though many lessons will likely be useful to those who have been using R for several years with bad ingrained practices. Use this website together with the [slides]() and [video recordings](). 
+This short workshop for SAEON GSN will introduce you to spatial data and analysis in R. It is aimed at R beginners and novices, who may or may not have GIS-type background in other programming platforms. Use this website together with the [slides]() and [video recordings](). 
 
-#### We will cover four topics:
+This workshop will explore different types of spatial data and introduce you to spatial anaylses workflows through worked examples.
 
-1. Data wrangling
+These worked examples will include:
 
-2. Data visualisation
+1. Making a map
 
-3. Data analysis
+2. Time series analysis
 
-4. R Markdown & Github
+3. Land cover change
+
+4. Species distribution modeling
+
+If you have not used R before, I highly recommend going over the content provided in the [Basics of R workshop]() previously run with the SAEON GSN.
 
 ### Getting started
 
