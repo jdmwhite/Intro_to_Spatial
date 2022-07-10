@@ -1,6 +1,6 @@
-name: "R Workshop"
+name: "Intro to Spatial Data in R"
 navbar:
-  title: "R Workshop"
+  title: "Intro to Spatial Data in R"
   left:
     - text: "Home"
       href: index.html
