@@ -1,84 +1,103 @@
+#### Install packages ----
 # install.packages('ggalluvial') 
+# install.packages('patchwork')
 
+#### Load libraries ----
 library(sf)
 library(terra)
 library(tidyverse)
 library(ggalluvial)
 library(patchwork)
 
-#Read 2020 Land cover (raster)
+#### Load data ----
+lc1990 <- rast("data/LULC/SANLC_1990_COJ_extent.tif")
 lc2020 <- rast("data/LULC/SANLC_2020_COJ_extent.tif")
-#Read the COJ boundary. we can omit "terra::" because this function name does not overlap with any other R package function.
 coj <- vect("data/LULC/COJ_boundary.shp")
 
-#
-print(paste0("The CRS of both layers are the same: ", crs(coj)==crs(lc2020)))
+par(mfrow = c(1,3))
+plot(lc1990)
+plot(lc2020)
+plot(coj)
 
-coj <- project(coj, crs(lc2020))
-print(paste0("The CRS of both layers are the same: ", crs(coj)==crs(lc2020)))
+#### Check projections ----
+print(paste0("Do the layers have the same CRS? ", crs(lc1990)==crs(lc2020)))
 
-# Crop
-lc2020_cropped = crop(lc2020, coj)
-# Mask
-lc2020_final = mask(lc2020_cropped, coj)
-#Convert raster to Vector
-lc2020_poly = as.polygons(lc2020_final, dissolve =T) %>% st_as_sf()
-#Rename the column with the class name to "class"
-colnames(lc2020_poly)<- c("class", "geometry")
+lc1990 <- project(lc1990, lc2020)
+print(paste0("Do the layers have the same CRS? ", crs(lc1990)==crs(lc2020)))
 
-#Load LC1990
-lc1990 = rast("data/LULC/SANLC_1990_COJ_extent.tif")
-#Reproject to match lc2020
-lc1990<- terra::project(lc1990,lc2020)
-# Crop
-lc1990_cropped = crop(lc1990, coj)
-# Mask
-lc1990_final = mask(lc1990_cropped, coj)
-#Convert raster to Vector (sf)
-lc1990_poly = as.polygons(lc1990_final, dissolve =T) %>% st_as_sf()
-#Rename the column with the class name to "class"
-colnames(lc1990_poly)<- c("class", "geometry")
-#sanity check
-print(unique(lc2020_poly$class))
+#Reproject the coj vector to match the land cover rasters
+coj <- project(coj, lc2020)
 
+# Plot maps to view our data
+par(mfrow = c(1,1))
+plot(lc1990)
+plot(coj, add = TRUE)
 
-# reclassify 1990 and 2020 land cover
+#### Crop & Mask ----
+# First crop and then mask the land cover data to our area of interest
+lc1990_aoi <- mask(crop(lc1990, coj), coj)
+lc2020_aoi <- mask(crop(lc2020, coj), coj)
+print(paste0("Do the layers have the same extent? ", ext(lc1990_aoi) == ext(lc2020_aoi)))
 
+# Check to see if this worked
+plot(lc2020_aoi)
+plot(coj, add = TRUE)
+
+#### Reclassify ----
+# We have more than 70 classes for each of the land cover datasets. At this point we want to reclassify these classes to simpler classes
+# Let's merge all of our classes into 4 broad categories:
 # Key
 # 1= Water
 # 2= Agriculture
 # 3= Artificial surfaces
 # 4 = Vegetation
 
-#1990 reclasssify
+# Create a reclassification matrix for 1990
+m1990 <- rbind(c(0, 3, 1),
+          c(36, 38, 1),
+          c(9, 31, 2),
+          c(34, 36, 3),
+          c(38, 51, 3),
+          c(52, 56, 3),
+          c(60, 72, 3),
+          c(3, 9, 4),
+          c(31, 34, 4),
+          c(51, 52, 4),
+          c(56, 60, 4))
 
-lc1990_rcl<-dplyr::mutate(lc1990_poly, 
-                          rcls_1990 = case_when(
-                            (class %in% c(1, 2, 3, 37, 38)) ~ 1,
-                            (class %in% c(10:31)) ~ 2,
-                            (class %in% c(35, 36, 39:51, 53:56, 61:72)) ~ 3,
-                            (class %in% c(4:9, 32:34, 52, 57:60)) ~ 4,
-                            TRUE~0))
-#2020 reclasssify
-lc2020_rcl<-mutate(lc2020_poly, 
-                   rcls_2020 = case_when(
-                     (class %in% c(14:24)) ~ 1,
-                     (class %in% c(32:46)) ~ 2,
-                     (class %in% c(25:31, 47:60, 65:73)) ~ 3,
-                     (class %in% c(1:13, 14:19, 20:25, 61:64)) ~ 4,
-                     TRUE~0))
+# Reclassify using the terra::classify function
+lc1990_rcl <- classify(lc1990_aoi, m1990)
+plot(lc1990_rcl)
 
-lc2020r  <- rasterize(vect(lc2020_rcl), lc2020_final, 'rcls_2020')
+# Create a reclassification matrix for 2020
+m2020 <- rbind(c(13, 24, 1),
+               c(31, 46, 2),
+               c(24, 31, 3),
+               c(46, 60, 3),
+               c(64, 73, 3),
+               c(0, 13, 4),
+               c(13, 19, 4),
+               c(19, 25, 4),
+               c(60, 64, 4))
 
-lc1990r  <- rasterize(vect(lc1990_rcl), lc1990_final, 'rcls_1990')
+# Reclassify 2020
+lc2020_rcl <- classify(lc2020_aoi, m2020)
+plot(lc2020_rcl)
 
-#stack land cover
-landcover_stack <- c(lc2020r, lc1990r)
-#Change analysis. long =T returns a data frame instead of a table.
-Changes<-crosstab(landcover_stack, long=T)
+#### Crosstab ----
+# We now want to calculate the pairwise changes between the 1990 and 2020 land cover data.
 
-Changes %>% mutate(
-  area = Freq*900/1e6,
+# stack the land cover
+landcover_stack <- c(lc2020_rcl, lc1990_rcl)
+# Run a change analysis using the terra::crosstab function. long =T returns a data frame instead of a table.
+lc_changes <- crosstab(landcover_stack, long = TRUE)
+head(lc_changes)
+
+# tidy up this output by changing the raster names, calculating the area of each class and assigning the full names back to the numbers
+lc_changes %>% 
+  rename(rcls_2020 = SANLC_2020_COJ_extent,
+        rcls_1990 = SANLC_1990_COJ_extent) %>%
+  mutate(area = Freq*900/1e6,
   lc1990 = case_when(
     rcls_1990 == 1 ~ 'Water',
     rcls_1990 == 2 ~ 'Agriculture',
@@ -89,10 +108,11 @@ Changes %>% mutate(
     rcls_2020 == 2 ~ 'Agriculture',
     rcls_2020 == 3 ~ 'Artificial',
     rcls_2020 == 4 ~ 'Vegetation')
-) %>% select(lc1990, lc2020, area) -> Changes
-####
+) %>% select(lc1990, lc2020, area) -> lc_changes_labelled
 
-alluv_plot <- ggplot(Changes, aes(axis1 = lc1990, axis2 = lc2020, y = area)) +
+#### Visualisation ----
+# First let's run a sankey/alluvium plot
+alluv_plot <- ggplot(lc_changes_labelled, aes(axis1 = lc1990, axis2 = lc2020, y = area)) +
   geom_alluvium(aes(fill = lc1990)) +
   scale_fill_manual(values = c('#7E6148B2','#F39B7FB2','#00A087B2','#4DBBD5B2'), guide = 'none') +
   geom_stratum(fill = c('#4DBBD5B2','#00A087B2','#F39B7FB2','#7E6148B2','#4DBBD5B2','#00A087B2','#F39B7FB2','#7E6148B2'), col = NA, alpha = 0.8) +
@@ -104,35 +124,39 @@ alluv_plot <- ggplot(Changes, aes(axis1 = lc1990, axis2 = lc2020, y = area)) +
 alluv_plot
 
 #### Plot maps
-# upsample the rasters using aggregate
-lc1990ra <- aggregate(lc1990r, 5, fun = 'median')
-lc1990_df <- as.data.frame(lc1990ra, xy = TRUE)
+# downsample the rasters using aggregate & convert to a data frame for plotting with ggplot2
+lc1990_a <- aggregate(lc1990_rcl, 5, fun = 'median')
+lc1990_df <- as.data.frame(lc1990_a, xy = TRUE)
 names(lc1990_df)[3] <- 'land_cover'
 
-lc2020ra <- aggregate(lc2020r, 5, fun = 'median')
-lc2020_df <- as.data.frame(lc2020ra, xy = TRUE)
+lc2020_a <- aggregate(lc2020_rcl, 5, fun = 'median')
+lc2020_df <- as.data.frame(lc2020_a, xy = TRUE)
 names(lc2020_df)[3] <- 'land_cover'
 
+# plot the reclassified land cover for 1990
 lc1990_plot <- ggplot(lc1990_df) +
-  geom_tile(aes(x = x, y = y, fill = as.factor(land_cover))) +
-  scale_fill_manual(values = c('#4DBBD5B2','#7E6148B2','#F39B7FB2','#00A087B2'),
-                    labels = c('Water', 'Agriculture', 'Artificial', 'Vegetation'), guide = 'none') +
+  geom_tile(aes(x = x, y = y, fill = as.factor(land_cover), col = as.factor(land_cover))) +
+  scale_fill_manual(values = c('#4DBBD5B2','#7E6148B2','#F39B7FB2','#00A087B2'),labels = c('Water', 'Agriculture', 'Artificial', 'Vegetation'), guide = 'none') +
+  scale_colour_manual(values = c('#4DBBD5B2','#7E6148B2','#F39B7FB2','#00A087B2'), guide = 'none') +
   geom_sf(data = st_as_sf(coj), fill = NA, col = 'black', lwd = 0.2) +
   labs(title = '1990', fill = 'Land Cover') +
   theme_void() +
   theme(plot.title = element_text(hjust = 0.5)) 
   
+# plot the reclassified land cover for 2020
 lc2020_plot <- ggplot(lc2020_df) +
   geom_tile(aes(x = x, y = y, fill = as.factor(land_cover))) +
-  scale_fill_manual(values = c('#4DBBD5B2','#7E6148B2','#F39B7FB2','#00A087B2'),
-                    labels = c('Water', 'Agriculture', 'Artificial', 'Vegetation'), guide = 'none') +
+  geom_tile(aes(x = x, y = y, fill = as.factor(land_cover), col = as.factor(land_cover))) +
+  scale_fill_manual(values = c('#4DBBD5B2','#7E6148B2','#F39B7FB2','#00A087B2'),labels = c('Water', 'Agriculture', 'Artificial', 'Vegetation'), guide = 'none') +
+  scale_colour_manual(values = c('#4DBBD5B2','#7E6148B2','#F39B7FB2','#00A087B2'), guide = 'none') +
   geom_sf(data = st_as_sf(coj), fill = NA, col = 'black', lwd = 0.2) +
   labs(title = '2020', fill = 'Land Cover') +
   theme_void() +
   theme(plot.title = element_text(hjust = 0.5)) 
 
-
+# Combine the plots together using patchwork and add on plot labels
 lc_plots <- lc1990_plot + lc2020_plot + alluv_plot & plot_annotation(tag_levels = 'a', tag_suffix = ')')
 
-ggsave('output/figs/land_cover_plots.png', lc_plots,
+# Save the output
+ggsave('output/figs/land_cover_change/land_cover_plots.png', lc_plots,
        width = 180, height = 100, units = c('mm'), dpi = 'retina')
