@@ -10,6 +10,7 @@ devtools::install_github("sjevelazco/flexsdm")
 library(terra)
 library(rnaturalearth)
 library(flexsdm)
+library(SDMtune)
 
 #### Load in data ----
 # Read species data 
@@ -102,67 +103,57 @@ protea_filt_pres <- occ_filt_10bin[,2:3]
 protea_filt_pres$pr_ab <- 1
 
 #### Spatial block cross-validation ----
-sb_cv <- part_sblock(
-  env_layer = cov_clean,
-  data = protea_filt_pres,
-  x = 'lon',
-  y = 'lat',
-  pr_ab = 'pr_ab',
-  min_res_mult = 10,
-  max_res_mult = 100,
-  num_grids = 30,
-  n_part = 4,
-  prop = 1
+spat_range <- blockCV::spatialAutoRange(
+  rasterLayer = raster::raster(cov_clean),
+  speciesData = st_as_sf(protea_filt_pres, coords = c('lon','lat'), crs = crs(cov_clean)),
+  doParallel = TRUE,
+  showPlots = TRUE)
+
+SB <- blockCV::spatialBlock(
+  speciesData = st_as_sf(protea_filt_pres, coords = c('lon','lat'), crs = crs(cov_clean)),
+  species = "pr_ab",
+  rasterLayer = raster::raster(cov_clean),
+  k = 4,
+  iteration = 100,
+  theRange = 110469
 )
 
+SB$plots
+protea_filt_pres$part <- SB$foldID
+
 # select the new dataset with partitions
-protea_part <- sb_cv$part
-protea_part %>% group_by(.part) %>% count()
+protea_part <- protea_filt_pres
+protea_part %>% group_by(part) %>% count()
 
-grid_env <- get_block(env_layer = cov_clean, best_grid = sb_cv$grid)
-
+# grid_env <- get_block(env_layer = cov_clean, best_grid = sb_cv$grid)
+grid_env <- rasterize(vect(SB$blocks), cov_clean, field = 'folds')
 plot(grid_env)
-points(protea_part[c('x', 'y')],
-       col = c('blue', 'green', 'yellow', 'red')[protea_part$.part],
-       pch = 19)
 
-
-#### Create background & pseudo-absences ----
-# # background
-# set.seed(42)
-# bg <- lapply(1:4, function(x) {
-#   sample_background(
-#     data = protea_part,
-#     x = 'x',
-#     y = 'y',
-#     n = sum(protea_part$.part == x) * 10,
-#     method = 'random',
-#     rlayer = grid_env,
-#     maskval = x,
-#     calibarea = aoi
-#   )
-# }) %>% bind_rows() 
-# bg <- sdm_extract(data = bg, x = "x", y = "y", env_layer = grid_env) 
-
+#### Create pseudo-absences ----
 # pseudo-absences
-set.seed(42)
+set.seed(101)
 pa <- lapply(1:4, function(x) {
   sample_pseudoabs(
   data = protea_part,
-  x = 'x',
-  y = 'y',
-  n = sum(protea_part$.part == x),
-  method = c('env_const', env = cov_clean),
-  rlayer = grid_env,
+  x = 'lon',
+  y = 'lat',
+  n = sum(protea_part$part == x),
+  method = c('env_const', env = cov_clean), # constrain to env less suitable places based on bioclim model of protea presences
   maskval = x,
+  # method = 'random',
+  rlayer = grid_env,
   calibarea = aoi
   )
 }) %>% bind_rows() 
 
-pa <- sdm_extract(data = pa, x = "x", y = "y", env_layer = grid_env)
+protea_part %>% group_by(part) %>% count()
+names(pa)[4] <- 'part'
+pa %>% group_by(part) %>% count()
 
-protea_part %>% group_by(.part) %>% count()
-pa %>% group_by(.part) %>% count()
+
+# pa <- sdm_extract(data = pa, x = "lon", y = "lat", env_layer = grid_env)
+
+
 # bg %>% group_by(.part) %>% count()
 
 par(mfrow = c(1,1))
@@ -172,29 +163,96 @@ points(pa, cex = 0.2, col = 'red')
 # points(bg, cex = 0.2, col = 'blue')
 
 #### Extract covariate values ----
-protea_pts <- bind_rows(protea_part, pa)
-
-pts_extract <- sdm_extract(
-  data = protea_pts,
-  x = 'x',
-  y = 'y',
-  env_layer = cov_clean
+# Prepare a Sample with Data object for SDMtune package
+SWDdata <- prepareSWD(
+  species = 'Protea roupelliae',
+  p = protea_filt_pres[,1:2],
+  a = pa[,1:2],
+  env = cov_clean
 )
-
-# bg_extract <- sdm_extract(
-#   data = bg,
-#   x = 'x',
-#   y = 'y',
-#   env_layer = cov_clean
-# )
+# For some reason ID is included, so we need to remove this...
+SWDdata@data <- SWDdata@data[-1]
 
 #### Fit Model ----
+# Random folds
+rand_folds <- randomFolds(SWDdata, k = 4, only_presence = TRUE, seed = 25)
+rf_randcv <- train(method = 'RF', data = SWDdata, folds = rand_folds)
+c('Testing AUC: ', auc(rf_randcv, test = TRUE))
+
+# spatial blocking by specified range and random assignment
+sb <- blockCV::spatialBlock(speciesData = sp_df, # sf or SpatialPoints
+                   species = "SWDdata@pa", # the response column (binomial or multi-class)
+                   rasterLayer = raster::raster(cov_clean)[[1]], # a raster for background (optional)
+                   theRange = 110469, # size of the blocks in meters
+                   k = 4, # number of folds
+                   selection = "random",
+                   iteration = 100) # find evenly dispersed folds
+
+# Spatial blocking folds
+rf_sbcv <- train(method = 'RF', data = SWDdata, folds = sb)
+c('Testing AUC: ', auc(rf_mod_sbcv, test = TRUE))
+
+SDMtune::confMatrix(rf_1)
+
+train_test <- trainValTest(SWDdata, test = 0.2, seed = 25)
+
+rf <- train(method = 'RF', data = SWDdata)
+
+rf_1 <- rf_sbcv@models[[1]]
+rf_2 <- rf_sbcv@models[[2]]
+
+train_1 
+SWDdata_1 <- SWDdata
+SWDdata_1@coords$X <- SWDdata_1@coords$X[rf_sbcv@folds$train[,1]]
+
+SWDdata_1@coords[rf_sbcv@folds$train[,1],]
+
+SWDdata@pa
+
+SWDdata
+
+plotROC(rf_1, test = TRUE)
+
+
+
+#### Variable importance ----
+vi_rf_randcv <- varImp(rf_randcv)
+plotVarImp(vi_rf_randcv)
+
+vi_rf_sbcv <- varImp(rf_sbcv)
+plotVarImp(vi_rf_sbcv)
+
+#### Response curves ----
+plotResponse(rf_sbcv, var = "max_t_warm_m", marginal = TRUE, rug = TRUE) + labs(x = 'Maximum temperature of warmest month')
+plotResponse(rf_sbcv, var = "min_t_cold_m", marginal = TRUE, rug = TRUE) + labs(x = 'Minimum temperature of coldest month')
+
+#### Model prediction ----
+pred <- predict(rf_sbcv, data = raster::stack(cov_clean),
+                type = 'prob')
+
+plotPred(pred, lt = "Habitat\nsuitability", colorramp = c("#2c7bb6", "#abd9e9", "#ffffbf", "#fdae61", "#d7191c"))
+
+
+
+# # bind together the presence and pseudo-absence data
+# protea_pts <- bind_rows(protea_part, pa)
+
+
+# pts_extract <- sdm_extract(
+#   data = protea_pts,
+#   x = 'lon',
+#   y = 'lat',
+#   env_layer = cov_clean
+# )
+# head(pts_extract)
+
+
 raf_mod <- fit_raf(
   data = pts_extract,
   response = 'pr_ab',
   predictors = selected_vars,
   # background = bg,
-  partition = '.part',
+  partition = 'part',
   thr = c('max_sens_spec')
 )
 
@@ -213,7 +271,8 @@ pred_sdm <- sdm_predict(
 
 plot(rast(pred_sdm))
 
-
+plot(pred_sdm$raf[[1]])
+plot(pred_sdm$raf[[2]])
 
 
 
