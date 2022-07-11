@@ -10,9 +10,9 @@ library(ggalluvial)
 library(patchwork)
 
 #### Load data ----
-lc1990 <- rast("data/LULC/SANLC_1990_COJ_extent.tif")
-lc2020 <- rast("data/LULC/SANLC_2020_COJ_extent.tif")
-coj <- vect("data/LULC/COJ_boundary.shp")
+lc1990 <- rast("data/land_cover_change/SANLC_1990_COJ_extent.tif")
+lc2020 <- rast("data/land_cover_change/SANLC_2020_COJ_extent.tif")
+coj <- vect("data/land_cover_change/COJ_boundary.shp")
 
 par(mfrow = c(1,3))
 plot(lc1990)
