@@ -7,14 +7,14 @@
 #https://cran.r-project.org/web/packages/MODISTools/vignettes/modistools-vignette.html
 
 #### Load packages ----
-library(MODISTools)
-library(tidyverse)
-library(terra)
-library(lubridate)
-library(animation)
+library(MODISTools) # downloading modis data
+library(tidyverse) # data manipulation and plotting
+library(terra) # raster manipulation
+library(lubridate) # dates
+library(animation) # animations
 
 #### Load in additional data----
-coj <- vect("data/LULC/COJ_boundary.shp")
+coj <- vect("data/land_cover_change/COJ_boundary.shp")
 
 #### Explore modis products ----
 # All products available
@@ -55,6 +55,7 @@ jhb_ndvi %>%
   summarise(doy = yday(as_date(calendar_date)),
             ndvi_median = median(value * as.numeric(scale))) %>% 
   distinct(doy, .keep_all = TRUE) -> jhb_med_ndvi
+head(jhb_med_ndvi)
 
 # Plot
 ggplot(jhb_med_ndvi, aes(x = doy, y = ndvi_median)) +
@@ -72,16 +73,16 @@ ggsave('output/figs/ndvi_time_series/jhb_med_ndvi.png',
 jhb_ndvi_split <- jhb_ndvi %>% filter(band == "500_m_16_days_NDVI") %>% split(jhb_ndvi$calendar_date)
 
 # convert each date into a raster (and reproject)
-jhb_ndvi_rast_list <- lapply(jhb_ndvi_split, function(x) {rast(mt_to_raster(x, reproject = TRUE))})
+jhb_ndvi_rast_list <- lapply(jhb_ndvi_split, function(x) {terra::rast(mt_to_raster(x, reproject = TRUE))})
 
 # convert the list of rasters into a raster stack
 jhb_ndvi_rasts <- rast(jhb_ndvi_rast_list)
 jhb_ndvi_rasts <- mask(jhb_ndvi_rasts, coj)
 
 # plot out two dates
-plot(jhb_ndvi_rasts$`2021-01-01`)
+plot(jhb_ndvi_rasts$`2021-01-01`, main = '2021-01-01')
 plot(coj, add = T)
-plot(jhb_ndvi_rasts$`2021-01-25`)
+plot(jhb_ndvi_rasts$`2021-01-25`, main = '2021-01-25')
 plot(coj, add = T)
 
 #### Convert Pixel Reliability to raster ----
@@ -96,13 +97,14 @@ jhb_pr_rasts <- rast(jhb_pr_rast_list)
 jhb_pr_rasts <- mask(jhb_pr_rasts, coj)
 
 # plot out a few dates
-plot(jhb_pr_rasts$`2021-01-01`)
-plot(jhb_pr_rasts$`2021-01-25`)
+plot(jhb_pr_rasts$`2021-01-01`, main = '2021-01-01')
+plot(jhb_pr_rasts$`2021-01-25`, main = '2021-01-25')
 # these are unreliable images
-plot(jhb_pr_rasts$`2021-06-18`) # this is a reliable image
+plot(jhb_pr_rasts$`2021-06-18`, main = '2021-06-18') # this is a reliable image
 # scores below 3 are acceptable
 
 #### Plot RGB ----
+# Using the same dataset, now download the red, green and blue bands to plot a true colour image for just the 25th January 2021
 jhb_rgb <- mt_subset(product = "VNP13A1",
                      lat = -26.183483,
                      lon =  27.975311,
@@ -117,12 +119,16 @@ jhb_rgb <- mt_subset(product = "VNP13A1",
                       internal = TRUE,
                       progress = TRUE)
 
+# Split the data frame again, this time by band instead of calendar_date
 jhb_rgb_split <- split(jhb_rgb, jhb_rgb$band)
 
+# convert to raster and reproject
 jhb_rgb_rasts <- lapply(jhb_rgb_split, function(x) {rast(mt_to_raster(x, reproject = TRUE))})
 
+# combine the rasters together
 jhb_rgb_rast <- c(jhb_rgb_rasts[[1]], jhb_rgb_rasts[[2]], jhb_rgb_rasts[[3]])
 
+# We can now use the plotRGB function to plot a true colour image
 plotRGB(jhb_rgb_rast, stretch = 'hist')
 plot(coj, add = TRUE)
 
@@ -162,10 +168,74 @@ cities_ndvi %>%
 ggsave('output/figs/ndvi_time_series/cities_med_ndvi.png',
        width = 180, height = 80, units = c('mm'), dpi = 'retina', bg = 'white')
 
+#### END (kind of) ####
+
 # Animate ----
 # Bonus - animate your NDVI rasters
-saveGIF(animate(jhb_ndvi_rasts),
-        interval = 0.1,
-        ani.height = 200, ani.width = 300,
-        movie.name = 'jhb_ndvi_animation.gif')
+# requires additional packages
+# install.packages(c('gganimate','magick'))
+library(gganimate)
+library(magick)
 
+# Just for speed we'll aggregate the raster data
+ndvi_rast_agg <- aggregate(jhb_ndvi_rasts, 5)
+# Convert it to a data frame and pivot to a long df
+rast_df <- as.data.frame(ndvi_rast_agg, xy = T) %>% pivot_longer(cols = 3:48, names_to = 'Date', values_to = 'NDVI')
+
+#### Map animation
+anim_map <- ggplot(rast_df) +
+  geom_tile(aes(x = x, y = y, fill = NDVI, col = NDVI)) +
+  scale_fill_gradientn(colours = rev(terrain.colors(7)),limits = c(0,1), breaks = seq(0,1,0.25)) +
+  scale_colour_gradientn(colours = rev(terrain.colors(7)),limits = c(0,1), breaks = seq(0,1,0.25)) +
+  geom_sf(data = st_as_sf(coj), fill = NA) +
+  theme_void() +
+  labs(title = "{frame_time}") +
+  gganimate::transition_time(as_date(Date))
+
+# Render the plot
+anim_map_param <- gganimate::animate(anim_map, fps = 10,
+                                     width = 720, 
+                                     height = 480,
+                                     res = 150, 
+                                     renderer = gifski_renderer("output/figs/land_cover_change/gifs/animation1.gif"))
+
+# Time series animation
+anim_ts <- ggplot(jhb_med_ndvi, aes(x = as_date(calendar_date), y = ndvi_median)) +
+  geom_point(aes(group = seq_along(doy), col = ndvi_median)) +
+  geom_line(aes(col = ndvi_median), lwd = 1) +
+  scale_colour_gradientn(colours = rev(terrain.colors(7)),limits = c(0,1), breaks = seq(0,1,0.25)) +
+  scale_x_date(breaks = scales::date_breaks('months'),labels = scales::date_format('%b')) +
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.25)) +
+  labs(x = 'Date', y = 'NDVI (median)',
+       title = 'City of Johannesburg NDVI over 2021',
+       subtitle = 'VIIRS/S-NPP Vegetation Indices 16-Day 500m') +
+  theme_classic() +
+  theme(legend.position = 'none') +
+  gganimate::transition_reveal(doy)   
+
+# Render the plot
+anim_ts_param <- gganimate::animate(anim_ts, fps = 10,
+                   width = 720, height = 480,
+                   res = 150,
+                   renderer = gifski_renderer("output/figs/land_cover_change/gifs/animation2.gif"))
+
+# Read them back in using magick::imageread
+map_mgif <- image_read(path = anim_map_param)
+ts_mgif <- image_read(path = anim_ts_param)
+
+# Combine the first frame of each gif
+combined_gifs <- image_append(c(map_mgif[1], ts_mgif[1]))
+# Loop in each additional frame and combine
+for(i in 2:100){
+  combined <- image_append(c(map_mgif[i], ts_mgif[i]))
+  combined_gifs <- c(combined_gifs, combined)
+}
+combined_gifs
+
+# Save combined gifs
+image_write_gif(
+  image = combined_gifs,
+  path = "output/figs/land_cover_change/gifs/combined_gifs.gif"
+)
+
+#### END ####

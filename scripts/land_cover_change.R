@@ -8,6 +8,7 @@ library(terra)
 library(tidyverse)
 library(ggalluvial)
 library(patchwork)
+library(mapview)
 
 #### Load data ----
 lc1990 <- rast("data/land_cover_change/SANLC_1990_COJ_extent.tif")
@@ -125,11 +126,11 @@ alluv_plot
 
 #### Plot maps
 # downsample the rasters using aggregate & convert to a data frame for plotting with ggplot2
-lc1990_a <- aggregate(lc1990_rcl, 5, fun = 'median')
+lc1990_a <- aggregate(lc1990_rcl, 5, fun = 'modal', by = 'SANLC_1990_COJ_extent')
 lc1990_df <- as.data.frame(lc1990_a, xy = TRUE)
 names(lc1990_df)[3] <- 'land_cover'
 
-lc2020_a <- aggregate(lc2020_rcl, 5, fun = 'median')
+lc2020_a <- aggregate(lc2020_rcl, 5, fun = 'modal', by = 'SANLC_2020_COJ_extent')
 lc2020_df <- as.data.frame(lc2020_a, xy = TRUE)
 names(lc2020_df)[3] <- 'land_cover'
 
@@ -160,3 +161,16 @@ lc_plots <- lc1990_plot + lc2020_plot + alluv_plot & plot_annotation(tag_levels 
 # Save the output
 ggsave('output/figs/land_cover_change/land_cover_plots.png', lc_plots,
        width = 180, height = 100, units = c('mm'), dpi = 'retina')
+
+#### Interactive map ----
+cls <- c('Water', 'Agriculture', 'Artificial', 'Vegetation')
+lc1990_raster <- as.factor(raster::raster(lc1990_a))
+lc1990_raster[] = factor(cls[lc1990_raster[]])
+lc2020_raster <- as.factor(raster::raster(lc2020_a))
+lc2020_raster[] = factor(cls[lc2020_raster[]])
+
+m <- mapview(lc1990_raster, na.color = NA, layer.name = 'Land Cover 1990', alpha = 1) +
+  mapview(lc2020_raster, na.color = NA, layer.name = 'Land Cover 2020', alpha = 1, legend = FALSE)
+m
+
+mapshot(m, "output/figs/land_cover_change/interactive_map.html")
