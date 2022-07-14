@@ -8,6 +8,12 @@ navbar:
       href: Making_a_map.html
     - text: 'NDVI time series'
       href: NDVI_time_series.html
+    - text: 'Land cover change'
+      href: Land_cover_change.html
+    - text: 'Species Distribution Models'
+      href: sdm.html
+    - text: 'Extras'
+      href: extras.html
     - text: "Additional Resources"
       href: Resources.html
 output_dir: "docs"

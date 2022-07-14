@@ -1,4 +1,4 @@
-# Take a look at the flexsdm webpage for excellent details:
+# Take a look at the flexsdm webpage for more details:
 # https://sjevelazco.github.io/flexsdm/index.html
 
 #### Install.packages ----

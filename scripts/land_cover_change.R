@@ -1,6 +1,7 @@
 #### Install packages ----
 # install.packages('ggalluvial') 
 # install.packages('patchwork')
+# install.packages('mapview')
 
 #### Load libraries ----
 library(sf)
@@ -15,6 +16,7 @@ lc1990 <- rast("data/land_cover_change/SANLC_1990_COJ_extent.tif")
 lc2020 <- rast("data/land_cover_change/SANLC_2020_COJ_extent.tif")
 coj <- vect("data/land_cover_change/COJ_boundary.shp")
 
+# Plot our raw data
 par(mfrow = c(1,3))
 plot(lc1990)
 plot(lc2020)
@@ -48,9 +50,9 @@ plot(coj, add = TRUE)
 # We have more than 70 classes for each of the land cover datasets. At this point we want to reclassify these classes to simpler classes
 # Let's merge all of our classes into 4 broad categories:
 # Key
-# 1= Water
-# 2= Agriculture
-# 3= Artificial surfaces
+# 1 = Water
+# 2 = Agriculture
+# 3 = Artificial surfaces
 # 4 = Vegetation
 
 # Create a reclassification matrix for 1990
@@ -90,7 +92,7 @@ plot(lc2020_rcl)
 
 # stack the land cover
 landcover_stack <- c(lc2020_rcl, lc1990_rcl)
-# Run a change analysis using the terra::crosstab function. long =T returns a data frame instead of a table.
+# Run a change analysis using the terra::crosstab function. long = T returns a data frame instead of a table.
 lc_changes <- crosstab(landcover_stack, long = TRUE)
 head(lc_changes)
 
@@ -157,6 +159,7 @@ lc2020_plot <- ggplot(lc2020_df) +
 
 # Combine the plots together using patchwork and add on plot labels
 lc_plots <- lc1990_plot + lc2020_plot + alluv_plot & plot_annotation(tag_levels = 'a', tag_suffix = ')')
+lc_plots
 
 # Save the output
 ggsave('output/figs/land_cover_change/land_cover_plots.png', lc_plots,
