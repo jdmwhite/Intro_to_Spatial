@@ -1,5 +1,5 @@
 ---
-title: "Intro to Spatial Data in R"
+title: "Introduction to Spatial Data in R"
 author: 
 - Joseph White
 date: "19th-20th July 2022"
