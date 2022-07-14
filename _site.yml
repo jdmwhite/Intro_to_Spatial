@@ -11,7 +11,7 @@ navbar:
     - text: 'Land cover change'
       href: Land_cover_change.html
     - text: 'SDMs'
-      href: sdm.html
+      href: SDMs.html
     - text: 'Extras'
       href: extras.html
     - text: "Additional Resources"
