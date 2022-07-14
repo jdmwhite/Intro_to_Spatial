@@ -86,7 +86,7 @@ plot(jhb_ndvi_rasts$`2021-01-25`, main = '2021-01-25')
 plot(coj, add = T)
 
 #### Convert Pixel Reliability to raster ----
-# filter to NDVI and then split the data frame into a list by date
+# filter to pixel reliability band and then split the data frame into a list by date
 jhb_pr_split <- jhb_ndvi %>% filter(band == "500_m_16_days_pixel_reliability") %>% split(jhb_ndvi$calendar_date)
 
 # convert each date into a raster (and reproject)
@@ -139,6 +139,7 @@ lat <- c(-26.2041, 5.6037, -1.2921)
 lon <- c(28.0473, -0.1870, 36.8219)
 site_name <- c('JHB', 'ACC', 'NAI')
 coords <- data.frame(site_name, lat, lon)
+coords
 
 # Use the mt_batch_subset function to load in data for multiple points
 cities_ndvi <- mt_batch_subset(df = coords,
@@ -176,6 +177,7 @@ ggsave('output/figs/ndvi_time_series/cities_med_ndvi.png',
 # install.packages(c('gganimate','magick'))
 library(gganimate)
 library(magick)
+library(sf)
 
 # Just for speed we'll aggregate the raster data
 ndvi_rast_agg <- aggregate(jhb_ndvi_rasts, 5)

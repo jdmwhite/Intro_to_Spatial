@@ -428,6 +428,18 @@ NDVI = \frac{(NIR - red)}{(NIR + red)}
 \]</span> NDVI can provide valuable information on phenology, vegetation
 productivity, agriculture, or disturbancs such as deforestation, illegal
 ploughing or wild fires.</p>
+<p>From <strong>gisgeography</strong>: “Normalized Difference Vegetation
+Index (NDVI) quantifies vegetation by measuring the difference between
+near-infrared (which vegetation strongly reflects) and red light (which
+vegetation absorbs).”</p>
+<p>NDVI can only fall between -1 and 1. A simplified understanding of
+NDVI values may say: values greater than 0.6 may indicate healthy
+vegetation, values lower than 0.6 but greater than 0, may indicate
+unhealthy vegetation. Values below 0 are likely to be water. Read up
+more on NDVI at <a
+href="https://gisgeography.com/ndvi-normalized-difference-vegetation-index/"><strong>gisgeography</strong></a>,
+where they explain the calculation and the use of different satellite
+bands.</p>
 <div class="figure" style="text-align: center">
 <img src="images/sa_modis.gif" alt="NDVI change over South Africa across a single year" width="60%" />
 <p class="caption">
@@ -592,7 +604,7 @@ jhb_ndvi &lt;- mt_subset(product = &quot;VNP13A1&quot;,
 <pre class="r"><code>end_time &lt;- Sys.time()
 # How long does it take to download 200 km2 of VIIRS NDVI data at 500 m resolution for 2 bands?
 end_time - start_time</code></pre>
-<pre><code>## Time difference of 1.816065 mins</code></pre>
+<pre><code>## Time difference of 1.450194 mins</code></pre>
 <p>Impressively, this only took 1.5 minutes to download 46 images overe
 200 km2. An interesting feature of the <code>MODISTools</code> package,
 is that it downloads data as a <code>data.frame</code>. This makes it
@@ -633,243 +645,308 @@ ggplot(jhb_med_ndvi, aes(x = doy, y = ndvi_median)) +
   theme_classic() </code></pre>
 <pre><code>## `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
 <p><img src="NDVI_time_series_files/figure-html/summarise%20data-1.png" width="672" /></p>
-<p>In very few lines of code - we already have a time series plot! Let’s
-save it:</p>
+<p>In very few lines of code - we already have a time series plot!</p>
+<p>This clearly shows the seasonal pattern of the (southern hemisphere)
+summer rainfall pattern of Johannesburg. The NDVI peaks in
+December/January and is lowest in July/August just before the rains
+begin. You may notice that in February there is a very odd, outlying
+observation. Let’s convert the data frame to rasters to explore this a
+bit further.</p>
+<p>Before we move on let’s save the plot to file:</p>
 <pre class="r"><code># Save plot
 ggsave(&#39;output/figs/ndvi_time_series/jhb_med_ndvi.png&#39;,
        width = 120, height = 80, units = c(&#39;mm&#39;), dpi = &#39;retina&#39;, bg = &#39;white&#39;)</code></pre>
-<pre><code>## `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
-<p>You may notice that in February there is a very odd, outlying
-observation. Let’s convert the data frame to rasters to explore this a
-bit further.</p>
 </div>
 <div id="convert-ndvi-data-frame-to-rasters" class="section level4">
 <h4>Convert NDVI data frame to rasters</h4>
+<p>To convert the data frame to rasters, we will first split up the
+large data frame into many smaller ones and store them in a list.</p>
+<p>To do this, we first filter to only include our NDVI band and then
+use the <code>split()</code> function by each <code>date</code>. The
+output of this is a large list with 46 seperate data frames - one for
+each date.</p>
 <pre class="r"><code># filter to NDVI and then split the data frame into a list by date
 jhb_ndvi_split &lt;- jhb_ndvi %&gt;% filter(band == &quot;500_m_16_days_NDVI&quot;) %&gt;% split(jhb_ndvi$calendar_date)</code></pre>
 <pre><code>## Warning in split.default(x = seq_len(nrow(x)), f = f, drop = drop, ...): data
 ## length is not a multiple of split variable</code></pre>
-<!-- #### Process MODIS data -->
-<!-- We can now load the MODIS data into R and begin exploring the data locally and start with processing.  -->
-<!-- ```{r} -->
-<!-- #### Load in and process MODIS data -->
-<!-- modis_files <- list.files('data/') -->
-<!-- modis_files -->
-<!-- # Let's use one raster image to explore the data -->
-<!-- r1 <- rast(paste0('data/',modis_files[1])) -->
-<!-- r1 -->
-<!-- # Image properties -->
-<!-- crs(r1) # CRS -->
-<!-- res(r1) # resolution -->
-<!-- nlyr(r1) # number of layers -->
-<!-- names(r1) # names of layers -->
-<!-- # We can also change the resolution, by aggregating cells. This is useful for later -->
-<!-- r1_agg <- aggregate(r1, fact = 5, fun = 'mean') -->
-<!-- res(r1_agg) -->
-<!-- #### Plot an image -->
-<!-- plot(r1[[1]]) -->
-<!-- plot(r1_agg[[1]]) # plot the first layer -->
-<!-- plot(r1_agg[[1]]/100000000) # plot with a scale factor -->
-<!-- ``` -->
-<!-- From **gisgeography**: "Normalized Difference Vegetation Index (NDVI) quantifies vegetation by measuring the difference between near-infrared (which vegetation strongly reflects) and red light (which vegetation absorbs)." -->
-<!-- NDVI can only fall between -1 and 1. A simplified understanding of NDVI values may say: values greater than 0.6 may indicate healthy vegetation, values lower than 0.6 but greater than 0, may indicate unhealthy vegetation. Values below 0 are likely to be water. Read up more on NDVI at [**gisgeography**](https://gisgeography.com/ndvi-normalized-difference-vegetation-index/), where they explain the calculation and the use of different satellite bands.  -->
-<!-- #### Processing MODIS data -->
-<!-- We have multiple images for the same date over different regions as shown below. So we need to 'mosaic' these together. Many of the following 'for loops' are only required because we have several images. If you only have one image, many of these steps will not be required.  -->
-<!-- ```{r} -->
-<!-- r2 <- rast(paste0('data/',modis_files[2])) -->
-<!-- par(mfrow=c(1,2)) -->
-<!-- plot(r1[[1]]) -->
-<!-- plot(r2[[1]]) -->
-<!-- ``` -->
-<!-- First, we will collect acquisition dates from file names. They are stored as yyyyddd, meaning the year and the julian day the image was collected. We want to extract the year and julian day, i.e. characters 10 to 13 and characters 14 to 16. -->
-<!-- ```{r} -->
-<!-- modis_files[1] -->
-<!-- substr(modis_files[1], 14, 16) # for example, the first image was taken on the 353rd day of the year -->
-<!-- substr(modis_files[1], 10, 13) # we also need to extract the year -->
-<!-- my_dates_vector <- vector() -->
-<!-- for(i in 1:length(modis_files)){ -->
-<!--   jday <- substr(modis_files[i], 14, 16) -->
-<!--   year <- substr(modis_files[i], 10, 13) -->
-<!--   # need to convert this to a date -->
-<!--   date <- ifelse(year < 2021,  -->
-<!--        as.character(as.Date(as.numeric(jday), origin = '2020-01-01')), -->
-<!--        as.character(as.Date(as.numeric(jday), origin = '2021-01-01'))) -->
-<!--   my_dates_vector[i] <- date -->
-<!-- } -->
-<!-- my_dates_vector -->
-<!-- ``` -->
-<!-- Now that we have the dates, we can load all of the MODIS images into our local environment as a list. We will also change the spatial resolution of each image as we load it into the list: -->
-<!-- ```{r} -->
-<!-- #### Load in all rasters as a list and change resolution -->
-<!-- my_raster_list <- list() -->
-<!-- for(i in 1:length(modis_files)){ -->
-<!--   r <- rast(paste0('data/',modis_files[i])) -->
-<!--   names(r)[1] <- 'NDVI' -->
-<!--   my_raster_list[[i]] <- aggregate(r, fact = 5, fun = 'mean') -->
-<!-- } -->
-<!-- length(my_raster_list) -->
-<!-- ``` -->
-<!-- We can now `mosaic` the rasters together. This function basically stitches the different rasters together. We run this over a grouping loop that uses the unique date of each image to identify which rasters belong together: -->
-<!-- ```{r} -->
-<!-- my_dates_vector_unique <- unique(my_dates_vector) -->
-<!-- my_mosaic_list <- list() -->
-<!-- for(i in 1:length(my_dates_vector_unique)){ -->
-<!--   index <- which(my_dates_vector %in% my_dates_vector_unique[i]) -->
-<!--     rlist_temp <- my_raster_list[index] -->
-<!--     spat_rast_coll <- sprc(rlist_temp) -->
-<!--     my_mosaic_list[[i]] <- mosaic(spat_rast_coll) -->
-<!-- } -->
-<!-- length(my_mosaic_list) -->
-<!-- ``` -->
-<!-- We now have 5 unique images, which we can plot out: -->
-<!-- ```{r} -->
-<!-- # Plot new mosaiced rasters -->
-<!-- par(mfrow = c(3,2)) -->
-<!-- plot(my_mosaic_list[[1]]$NDVI); title(my_dates_vector_unique[1]) -->
-<!-- plot(my_mosaic_list[[2]]$NDVI); title(my_dates_vector_unique[2]) -->
-<!-- plot(my_mosaic_list[[3]]$NDVI); title(my_dates_vector_unique[3]) -->
-<!-- plot(my_mosaic_list[[4]]$NDVI); title(my_dates_vector_unique[4]) -->
-<!-- plot(my_mosaic_list[[5]]$NDVI); title(my_dates_vector_unique[5]) -->
-<!-- ``` -->
-<!-- Next, we re-project the data to a format we're familiar with and that links to our *Protea* location data: -->
-<!-- ```{r} -->
-<!-- crs <- "+proj=longlat +datum=WGS84" -->
-<!-- my_mosaic_list_reproj <- lapply(my_mosaic_list, function(x) project(x, crs)) -->
-<!-- par(mfrow=c(1,1)) -->
-<!-- plot(my_mosaic_list_reproj[[1]]$NDVI) -->
-<!-- points(as_Spatial(p_roup)) -->
-<!-- ``` -->
-<!-- Lastly, we can discard the bands we do not need and only keep the NDVI band. At the same time, we will scale the NDVI values to fall between -1 and 1: -->
-<!-- ```{r} -->
-<!-- my_mosaic_list_scale <- lapply(my_mosaic_list_reproj, function(x) x$NDVI/100000000) -->
-<!-- par(mfrow=c(2,1)) -->
-<!-- plot(my_mosaic_list[[5]]$NDVI); points(as_Spatial(p_roup)) -->
-<!-- plot(my_mosaic_list_scale[[1]]); points(as_Spatial(p_roup)) -->
-<!-- ``` -->
-<!-- #### Extract NDVI values for each *Protea* location -->
-<!-- We now want to extract NDVI values for each *Protea* location across each time interval. To do this, we use `terra::extract`, which requires a raster and vector file. We run the `lapply` function, which is another type of `loop` function. It is designed to run over a list.  -->
-<!-- Once the dataset is extract, we change the name of each column to each date and then 'pivot' or transform our dataframe to a long format. We can then easily calculate summary statistics, such as mean, standard deviation and standard error of NDVI across all *Proteas*. -->
-<!-- ```{r} -->
-<!-- pr_ndvi_list <- lapply(my_mosaic_list_scale, function(x) terra::extract(x, st_coordinates(p_roup))) -->
-<!-- pr_ndvi_df <- data.frame(pr_ndvi_list) -->
-<!-- names(pr_ndvi_df) <- my_dates_vector_unique -->
-<!-- pr_ndvi_df$lon <- st_coordinates(p_roup)[,1] -->
-<!-- pr_ndvi_df$lat <- st_coordinates(p_roup)[,2] -->
-<!-- head(pr_ndvi_df) -->
-<!-- # Pivot to long form dataframe -->
-<!-- pr_ndvi_long <- pr_ndvi_df %>% pivot_longer(cols = 1:5, names_to = 'date', values_to = 'ndvi') -->
-<!-- # Summarise NDVI values for each date across P.r. locations -->
-<!-- ndvi_summary <- pr_ndvi_long %>% group_by(date) %>% summarise(mean = mean(ndvi), -->
-<!--                                               sd = sd(ndvi), -->
-<!--                                               se = sd(ndvi)/sqrt(n())) -->
-<!-- ``` -->
-<!-- We now plot a time series of NDVI values across all *Proteas*.  -->
-<!-- ```{r} -->
-<!-- ggplot(data = ndvi_summary) + -->
-<!--   geom_line(aes(x = as.Date(date), y = mean)) -->
-<!-- ``` -->
-<!-- This plot looks odd! But recognise that the y-axis is very truncated. We can change the parameters, which show that there is a general increase or stable NDVI change over the ~2 months we are focusing on. -->
-<!-- ```{r} -->
-<!-- ggplot(data = ndvi_summary) + -->
-<!--   geom_ribbon(aes(x = as.Date(date), y = mean, ymin = mean - sd, ymax = mean + sd), alpha = 0.3) + -->
-<!--   geom_line(aes(x = as.Date(date), y = mean)) + -->
-<!--   geom_point(aes(x = as.Date(date), y = mean)) + -->
-<!--   scale_x_date(labels = scales::date_format("%d-%m-%Y"), limits = c(as.Date('2020-12-15'), as.Date('2021-02-20'))) + -->
-<!--   scale_y_continuous(limits = c(0,1)) + -->
-<!--   xlab('Date') + ylab('NDVI') + -->
-<!--   theme_classic() -->
-<!-- ``` -->
-<!-- For comparison, we can also calculate the summary statistics and plot the time-series of NDVI values across full region (i.e. over each raster cell rather than each *Protea* location) for each unique date. -->
-<!-- ```{r} -->
-<!-- my_cellstats_list <- list() -->
-<!-- for(i in 1:length(my_mosaic_list_scale)){ -->
-<!-- mean <- global(my_mosaic_list_scale[[i]], 'mean', na.rm = TRUE) -->
-<!-- sd <- global(my_mosaic_list_scale[[i]], 'sd', na.rm = TRUE) -->
-<!-- se <- sd/sqrt(ncell(my_mosaic_list_scale[[i]])) -->
-<!-- my_cellstats_list[[i]] <- data.frame(i,mean, sd, se) -->
-<!-- } -->
-<!-- cell_summary <- bind_rows(my_cellstats_list) -->
-<!-- cell_summary$date <- my_dates_vector_unique -->
-<!-- ``` -->
-<!-- Now plot these values with the same plot specifications as the previous plot, so they are easily comparable.  -->
-<!-- ```{r} -->
-<!-- ggplot(data = cell_summary) + -->
-<!--   geom_ribbon(aes(x = as.Date(date), y = mean, ymin = mean - sd, ymax = mean + sd), alpha = 0.3) + -->
-<!--   geom_line(aes(x = as.Date(date), y = mean)) + -->
-<!--   geom_point(aes(x = as.Date(date), y = mean)) + -->
-<!--   scale_x_date(labels = scales::date_format("%d-%m-%Y"), limits = c(as.Date('2020-12-15'), as.Date('2021-02-20'))) + -->
-<!--   scale_y_continuous(limits = c(0,1)) + -->
-<!--   xlab('Date') + ylab('NDVI') + -->
-<!--   theme_classic() -->
-<!-- ``` -->
-<!-- What is the difference in the NDVI trend between the *Proteas* and between the background values? -->
-<!-- #### Animate NDVI map -->
-<!-- For presentations, it is often valuable to animate time series data. We can do this using a few different approaches, but here we will use `gganimate`, which links nicely with the `ggplot2` package. -->
-<!-- First, we need a little bit more processing of the raster layers. We select the countries we are interested in and then we use the `mask` function to remove all cells in our rasters that fall outside of these countries. Plot the output to see if this worked: -->
-<!-- ```{r} -->
-<!-- sern_a <- ne_countries(country = c('South Africa','Lesotho','Swaziland'), returnclass = 'sf', scale = 'medium') -->
-<!-- st_crs(sern_a) -->
-<!-- # mask the layer by sern African countries -->
-<!-- my_rast_crop <- lapply(my_mosaic_list_scale, function(x) mask(x, vect(sern_a))) -->
-<!-- par(mfrow=c(1,1)) -->
-<!-- plot(my_rast_crop[[1]]); points(as_Spatial(p_roup)) -->
-<!-- plot(as_Spatial(sern_a), add = TRUE) -->
-<!-- ``` -->
-<!-- As this practical has somewhat turned into a lesson on loops, here is another application using the `purrr` package. The function `map` in the `purrr` package applies a function to each element of the list. In this case, we want to use the `map_dfr` function, which returns a data frame and binds all successive elements onto the data frame.  -->
-<!-- The function we want to apply to each element within the `my_rast_crop` list is `as.data.frame()`. This converts our raster into a data frame. We wrap this function in the `setNames()` function, so that we can specify our new column names as x, y and NDVI for our value column. Lastly, we add on a unique ID for each raster, which we label `Date`. We can then use the ID column to assign the correct date to each image in our long format data frame.  -->
-<!-- ```{r} -->
-<!-- # Convert the rasters to a long format dataframe and give each raster a unique ID -->
-<!-- mydf <- purrr::map_dfr( -->
-<!--   my_rast_crop,  -->
-<!--   ~setNames(as.data.frame(., xy = TRUE), c('x', 'y','NDVI')),  -->
-<!--   .id = 'Date' -->
-<!-- ) -->
-<!-- # Convert this ID to the date of the raster -->
-<!-- mydf <- mydf %>% mutate(Date = as.Date(case_when( -->
-<!--   Date == 1 ~ my_dates_vector_unique[1], -->
-<!--   Date == 2 ~ my_dates_vector_unique[2], -->
-<!--   Date == 3 ~ my_dates_vector_unique[3], -->
-<!--   Date == 4 ~ my_dates_vector_unique[4], -->
-<!--   Date == 5 ~ my_dates_vector_unique[5], -->
-<!-- ))) -->
-<!-- ``` -->
-<!-- We are now ready to set up our animation. Create a base ggplot and plot the raster using `geom_tile`. Specify your x and y coordinates and use NDVI as the 'fill' option. For context, we add in our southern African countries and *Protea* locations as simple features using `geom_sf`. -->
-<!-- ```{r} -->
-<!-- # Create a base ggplot -->
-<!-- gg_base <- ggplot() + -->
-<!--   geom_tile(data = mydf, aes(x = x, y = y, fill = NDVI)) + -->
-<!--   scale_fill_gradient2(low = '#c4b68c', mid = '#628c2c', high = '#000f0f', midpoint = 0.4, breaks = c(-0.25, 0, 0.25, 0.5, 0.75, 1), limits = c(-0.25, 1), name = 'NDVI') + -->
-<!--   geom_sf(data = sern_a, fill = NA, col = 'black', lwd = 0.2) + -->
-<!--   geom_sf(data = p_roup, pch = 1, cex = 0.2, col = 'white') + -->
-<!--   scale_x_continuous(limits = c(22, 33)) + -->
-<!--   scale_y_continuous(limits = c(-34.5, -22)) + -->
-<!--   xlab('Longitude') + ylab('Latitude') + -->
-<!--   coord_sf() + -->
-<!--   theme_minimal() -->
-<!-- ``` -->
-<!-- To animate this plot, we add on the function `transition_states` from the `gganimate` package. This function requires the variable that we want to change (i.e. **Date**). We then specify how long we want the transition between frames to take, and how long the animation should stay on each frame (state_length). Using the `labs(title = '')` argument, we can also provide a title to each frame. Here we use `{closest_state}`, which means it will display the **Date** of the closest frame. -->
-<!-- ```{r} -->
-<!-- # Now add in the transitions -->
-<!-- gg_base + transition_states(states = Date, transition_length = 0.01, state_length = 1) + labs(title = "Date: {closest_state}") -->
-<!-- # Date is the variable we want to change per frame; transition_length is the time between each frame; state_length is the time that the animation stays on the frame -->
-<!-- # The title label is then set to 'closest_state', which reflects the closest date to each transition. -->
-<!-- ``` -->
-<!-- Lastly, we save this animation to file using the `anim_save` function. -->
-<!-- ```{r, eval=FALSE} -->
-<!-- anim_save('output/ndvi_animation.gif') # lastly, we save this as a gif. -->
-<!-- ``` -->
-<!-- #### Export summarised NDVI raster -->
-<!-- For your next practical, you will be collecting different environmental variables to describe the habitat conditions most important to *Protea roupelliae* using species distribution models. NDVI is frequently used in these models. Let's export a summarised NDVI layer for later use. First convert our list of rasters into a single raster with several layers (or a raster collection). Then calculate the mean value for each pixel across each layer. -->
-<!-- ```{r} -->
-<!-- # Find mean value across each raster -->
-<!-- spat_rast_coll <- rast(my_rast_crop) # convert the list to a single raster with many layers -->
-<!-- mean_ndvi <- mean(spat_rast_coll, na.rm = TRUE) # calculate the mean across each layer -->
-<!-- plot(mean_ndvi) -->
-<!-- ``` -->
-<!-- Our final step is to save this summary raster to file: -->
-<!-- ```{r, eval=FALSE} -->
-<!-- writeRaster(mean_ndvi, 'output/mean_ndvi.tiff') # save the raster to your output folder -->
-<!-- ``` -->
+<p>We can now convert each data frame to a raster using the built in
+<code>MODISTools</code> function <code>mt_to_raster()</code>. We nest
+this function inside a call to <code>terra::rast()</code>, which
+converts the <code>mt_to_raster()</code> output into a
+<code>terra</code> style <code>SpatRast</code>, which is easier to
+manipulate.</p>
+<p>We put this all inside the <code>lapply()</code> function, which will
+<code>loop</code> this function over each element of our list. The
+output is another list, but this time full of rasters.</p>
+<pre class="r"><code># convert each date into a raster (and reproject)
+jhb_ndvi_rast_list &lt;- lapply(jhb_ndvi_split, function(x) {terra::rast(mt_to_raster(x, reproject = TRUE))})</code></pre>
+<p>Using the <code>terra::rast()</code> function again, we can now
+convert this list of rasters into a <strong>raster stack</strong>. This
+<strong>stack</strong> can then be easily manipulated, like masking the
+pixels to only be inside our area of interest - Johannesburg.</p>
+<pre class="r"><code># convert the list of rasters into a raster stack
+jhb_ndvi_rasts &lt;- rast(jhb_ndvi_rast_list)
+jhb_ndvi_rasts &lt;- mask(jhb_ndvi_rasts, coj)</code></pre>
+<p>Let’s now visualise our odd outlying date. We will plot both the
+first image and the image on the 25th of January using the
+<code>terra::plot()</code> function, which is an easy way to quickly
+view our data.</p>
+<pre class="r"><code># plot out two dates
+plot(jhb_ndvi_rasts$`2021-01-01`, main = &#39;2021-01-01&#39;)
+plot(coj, add = T)</code></pre>
+<p><img src="NDVI_time_series_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<pre class="r"><code>plot(jhb_ndvi_rasts$`2021-01-25`, main = &#39;2021-01-25&#39;)
+plot(coj, add = T)</code></pre>
+<p><img src="NDVI_time_series_files/figure-html/unnamed-chunk-5-2.png" width="672" /></p>
+<p>We can clearly see that there is something odd in our second image.
+Large portions have very low NDVI values. Can you think of why this may
+be the case?</p>
+<p>Let’s explore this further using the pixel reliability index.</p>
+</div>
+<div id="convert-pixel-reliability-to-raster" class="section level4">
+<h4>Convert Pixel Reliability to raster</h4>
+<p>We will repeat the same steps as we did above for the NDVI band, but
+this time filter the data to only the pixel reliability band. We will
+end by plotting out 3 dates: our first image, 25th of January and then
+an image from June (in the dry winter months).</p>
+<pre class="r"><code># filter to pixel reliability band and then split the data frame into a list by date
+jhb_pr_split &lt;- jhb_ndvi %&gt;% filter(band == &quot;500_m_16_days_pixel_reliability&quot;) %&gt;% split(jhb_ndvi$calendar_date)</code></pre>
+<pre><code>## Warning in split.default(x = seq_len(nrow(x)), f = f, drop = drop, ...): data
+## length is not a multiple of split variable</code></pre>
+<pre class="r"><code># convert each date into a raster (and reproject)
+jhb_pr_rast_list &lt;- lapply(jhb_pr_split, function(x) {rast(mt_to_raster(x, reproject = TRUE))})
+
+# convert the list of rasters into a raster stack
+jhb_pr_rasts &lt;- rast(jhb_pr_rast_list)
+jhb_pr_rasts &lt;- mask(jhb_pr_rasts, coj)
+
+# plot out a few dates
+plot(jhb_pr_rasts$`2021-01-01`, main = &#39;2021-01-01&#39;)</code></pre>
+<p><img src="NDVI_time_series_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<pre class="r"><code>plot(jhb_pr_rasts$`2021-01-25`, main = &#39;2021-01-25&#39;)</code></pre>
+<p><img src="NDVI_time_series_files/figure-html/unnamed-chunk-6-2.png" width="672" /></p>
+<pre class="r"><code># these are unreliable images
+plot(jhb_pr_rasts$`2021-06-18`, main = &#39;2021-06-18&#39;) # this is a reliable image</code></pre>
+<p><img src="NDVI_time_series_files/figure-html/unnamed-chunk-6-3.png" width="672" /></p>
+<pre class="r"><code># scores below 3 are acceptable</code></pre>
+<p>We can immediately see that images 1 and 2 have very high scores
+(above 3). Any value above 3 is likely to be an unreliable pixel. Our
+last image most has values below 3.</p>
+<p>An ideal workflow from here would be to filter NDVI pixel out with an
+unreliable pixel score. We won’t do it here, but keep this in mind if
+you are getting strange outliers.</p>
+</div>
+<div id="plot-rgb" class="section level4">
+<h4>Plot RGB</h4>
+<p>To better visualise this, we will now plot the true colour image
+using the red, green and blue bands for a limited region (20 km each
+direction of our point of interest) and for a single date (25th January
+2021). We download and process our new data in the same way as
+before:</p>
+<pre class="r"><code># Using the same dataset, now download the red, green and blue bands to plot a true colour image for just the 25th January 2021
+jhb_rgb &lt;- mt_subset(product = &quot;VNP13A1&quot;,
+                     lat = -26.183483,
+                     lon =  27.975311,
+                     band = c(&quot;500_m_16_days_red_reflectance&quot;,
+                               &quot;500_m_16_days_green_reflectance&quot;,
+                               &#39;500_m_16_days_blue_reflectance&#39;),
+                      start = &quot;2021-01-25&quot;,
+                      end = &quot;2021-01-25&quot;,
+                      km_lr = 20,
+                      km_ab = 20,
+                      site_name = &quot;JHB&quot;,
+                      internal = TRUE,
+                      progress = TRUE)</code></pre>
+<pre><code>## Downloading chunks:</code></pre>
+<pre><code>## 
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |======================================================================| 100%</code></pre>
+<pre><code>## Downloading chunks:</code></pre>
+<pre><code>## 
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |======================================================================| 100%</code></pre>
+<pre><code>## Downloading chunks:</code></pre>
+<pre><code>## 
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |======================================================================| 100%</code></pre>
+<pre class="r"><code># Split the data frame again, this time by band instead of calendar_date
+jhb_rgb_split &lt;- split(jhb_rgb, jhb_rgb$band)
+
+# convert to raster and reproject
+jhb_rgb_rasts &lt;- lapply(jhb_rgb_split, function(x) {rast(mt_to_raster(x, reproject = TRUE))})
+
+# combine the rasters together
+jhb_rgb_rast &lt;- c(jhb_rgb_rasts[[1]], jhb_rgb_rasts[[2]], jhb_rgb_rasts[[3]])
+
+# We can now use the plotRGB function to plot a true colour image
+plotRGB(jhb_rgb_rast, stretch = &#39;hist&#39;)
+plot(coj, add = TRUE)</code></pre>
+<p><img src="NDVI_time_series_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p>You may have guessed it by now and it is obvious to see that there is
+a massive cloud in the middle of our image! Clouds are a serious issue
+in optical remote sensing and can easily throw off NDVI measures. The
+MODIS and VIIRS products try to account for this by averaging data over
+a 16-day time period. But even then in areas with lots of cloud cover,
+like Johannesburg in its rainy summer and frequently in the tropics,
+this is a recurring issue. So keep this in mind when handling optical
+satellite imagery and remember to filter these out if the issues are
+severe using either pixel reliability measures or cloud-masking
+methods.</p>
+</div>
+<div id="download-ndvi-for-multiple-sites" class="section level4">
+<h4>Download NDVI for multiple sites</h4>
+<p>We will now move onto download NDVI data for multiple sites. To do
+this, we need to create or import a data frame with lat/lon coordinates
+for each site. You can import this as a csv file. The function we will
+use is <code>MODISTools::mt_batch_subset()</code>. This requires your
+data frame to have a <code>lat</code>, <code>lon</code> and
+<code>site_name</code> column. Rename your variables using
+<code>names(df) &lt;- c('site_name', 'lat', 'lon')</code> if they have
+different names. We will quickly create a data frame in R, using lat/lon
+coordinates for 3 cities: Johannesburg, Accra and Nairobi.</p>
+<p>We the use the <code>mt_batch_subset()</code> function and use a
+buffer of only 2km each direction for each city and extract only the
+NDVI values for 2021.</p>
+<pre class="r"><code># Batch download
+# Create a dataframe of sites and lat/lon or load in a csv
+lat &lt;- c(-26.2041, 5.6037, -1.2921)
+lon &lt;- c(28.0473, -0.1870, 36.8219)
+site_name &lt;- c(&#39;JHB&#39;, &#39;ACC&#39;, &#39;NAI&#39;)
+coords &lt;- data.frame(site_name, lat, lon)
+coords</code></pre>
+<pre><code>##   site_name      lat     lon
+## 1       JHB -26.2041 28.0473
+## 2       ACC   5.6037 -0.1870
+## 3       NAI  -1.2921 36.8219</code></pre>
+<pre class="r"><code># Use the mt_batch_subset function to load in data for multiple points
+cities_ndvi &lt;- mt_batch_subset(df = coords,
+                      product = &quot;VNP13A1&quot;,
+                      band = c(&quot;500_m_16_days_NDVI&quot;),
+                      start = &quot;2021-01-01&quot;,
+                      end = &quot;2021-12-30&quot;,
+                      km_lr = 2,
+                      km_ab = 2,
+                      internal = TRUE)</code></pre>
+<p>For the amount of data we are downloading this works amazingly
+quickly!</p>
+<p>We can then summarise the data by city (site) and the date
+(calendar_date) and pipe <code>%&gt;%</code> this directly into a
+<code>ggplot()</code>. Note that we use
+<code>facet_grid(cols = vars(site))</code> in the <code>ggplot()</code>
+to create a separate plot for each city.</p>
+<pre class="r"><code># Summarise the values by site and date and pipe this directly into a ggplot call
+# Use facets to display a smoothed NDVI curve for each site
+cities_ndvi %&gt;%
+  group_by(site, calendar_date) %&gt;%
+  summarise(doy = yday(as_date(calendar_date)),
+            ndvi_median = median(value * as.numeric(scale))) %&gt;%
+  distinct(doy, .keep_all = TRUE) %&gt;%
+  ggplot(aes(x = doy, y = ndvi_median)) +
+    geom_point(size = 0.8, alpha = 0.8) +
+    geom_smooth(method = &#39;loess&#39;, col = &#39;darkgreen&#39;) +
+    labs(x = &#39;Day of Year&#39;, y = &#39;NDVI (median)&#39;) +
+    theme_classic() +
+    facet_grid(cols = vars(site))</code></pre>
+<pre><code>## `summarise()` has grouped output by &#39;site&#39;, &#39;calendar_date&#39;. You can override
+## using the `.groups` argument.
+## `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
+<p><img src="NDVI_time_series_files/figure-html/plot%20batch-1.png" width="672" /></p>
+<p>And remember to save the plot:</p>
+<pre class="r"><code># Save plot
+ggsave(&#39;output/figs/ndvi_time_series/cities_med_ndvi.png&#39;,
+       width = 180, height = 80, units = c(&#39;mm&#39;), dpi = &#39;retina&#39;, bg = &#39;white&#39;)</code></pre>
+<pre><code>## `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
+<p>That is essentially the end of the learning objectives for this
+tutorial. However, it is great to use time series data in presentations
+and to best illustrate this, it can be useful to animate our plots.
+Scroll down to the bonus section to see how this can be done:</p>
+</div>
+<div id="animate-time-series" class="section level4">
+<h4>Animate time series</h4>
+<pre class="r"><code># Animate ----
+# Bonus - animate your NDVI rasters
+# requires additional packages
+# install.packages(c(&#39;gganimate&#39;,&#39;magick&#39;))
+library(gganimate)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;gganimate&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:terra&#39;:
+## 
+##     animate</code></pre>
+<pre class="r"><code>library(magick)</code></pre>
+<pre><code>## Linking to ImageMagick 6.9.12.3
+## Enabled features: cairo, fontconfig, freetype, heic, lcms, pango, raw, rsvg, webp
+## Disabled features: fftw, ghostscript, x11</code></pre>
+<pre class="r"><code>library(sf)</code></pre>
+<pre><code>## Linking to GEOS 3.10.2, GDAL 3.4.2, PROJ 8.2.1; sf_use_s2() is TRUE</code></pre>
+<pre class="r"><code># Just for speed we&#39;ll aggregate the raster data
+ndvi_rast_agg &lt;- aggregate(jhb_ndvi_rasts, 5)
+# Convert it to a data frame and pivot to a long df
+rast_df &lt;- as.data.frame(ndvi_rast_agg, xy = T) %&gt;% pivot_longer(cols = 3:48, names_to = &#39;Date&#39;, values_to = &#39;NDVI&#39;)
+
+#### Map animation
+anim_map &lt;- ggplot(rast_df) +
+  geom_tile(aes(x = x, y = y, fill = NDVI, col = NDVI)) +
+  scale_fill_gradientn(colours = rev(terrain.colors(7)),limits = c(0,1), breaks = seq(0,1,0.25)) +
+  scale_colour_gradientn(colours = rev(terrain.colors(7)),limits = c(0,1), breaks = seq(0,1,0.25)) +
+  geom_sf(data = st_as_sf(coj), fill = NA) +
+  theme_void() +
+  labs(title = &quot;{frame_time}&quot;) +
+  gganimate::transition_time(as_date(Date))
+
+# Render the plot
+anim_map_param &lt;- gganimate::animate(anim_map, fps = 10,
+                                     width = 720, 
+                                     height = 480,
+                                     res = 150, 
+                                     renderer = gifski_renderer(&quot;output/figs/ndvi_time_series/gifs/animation1.gif&quot;))
+
+# Time series animation
+anim_ts &lt;- ggplot(jhb_med_ndvi, aes(x = as_date(calendar_date), y = ndvi_median)) +
+  geom_point(aes(group = seq_along(doy), col = ndvi_median)) +
+  geom_line(aes(col = ndvi_median), lwd = 1) +
+  scale_colour_gradientn(colours = rev(terrain.colors(7)),limits = c(0,1), breaks = seq(0,1,0.25)) +
+  scale_x_date(breaks = scales::date_breaks(&#39;months&#39;),labels = scales::date_format(&#39;%b&#39;)) +
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.25)) +
+  labs(x = &#39;Date&#39;, y = &#39;NDVI (median)&#39;,
+       title = &#39;City of Johannesburg NDVI over 2021&#39;,
+       subtitle = &#39;VIIRS/S-NPP Vegetation Indices 16-Day 500m&#39;) +
+  theme_classic() +
+  theme(legend.position = &#39;none&#39;) +
+  gganimate::transition_reveal(doy)   
+
+# Render the plot
+anim_ts_param &lt;- gganimate::animate(anim_ts, fps = 10,
+                   width = 720, height = 480,
+                   res = 150,
+                   renderer = gifski_renderer(&quot;output/figs/ndvi_time_series/gifs/animation2.gif&quot;))
+
+# Read them back in using magick::imageread
+map_mgif &lt;- image_read(path = anim_map_param)
+ts_mgif &lt;- image_read(path = anim_ts_param)
+
+# Combine the first frame of each gif
+combined_gifs &lt;- image_append(c(map_mgif[1], ts_mgif[1]))
+# Loop in each additional frame and combine
+for(i in 2:100){
+  combined &lt;- image_append(c(map_mgif[i], ts_mgif[i]))
+  combined_gifs &lt;- c(combined_gifs, combined)
+}
+combined_gifs</code></pre>
+<p><img
+src="NDVI_time_series_files/figure-html/unnamed-chunk-9-1.gif" /><!-- --></p>
+<pre class="r"><code># Save combined gifs
+image_write_gif(
+  image = combined_gifs,
+  path = &quot;output/figs/ndvi_time_series/gifs/combined_gifs.gif&quot;
+)</code></pre>
+<pre><code>## [1] &quot;/Users/Joseph/Dropbox/2022_Research/SAEON_GSN_R/Intro_to_Spatial/Intro_to_Spatial/output/figs/ndvi_time_series/gifs/combined_gifs.gif&quot;</code></pre>
 </div>
 <div id="extra-resources-for-using-ndvi-in-r" class="section level4">
 <h4>Extra resources for using NDVI in R</h4>
@@ -877,7 +954,11 @@ jhb_ndvi_split &lt;- jhb_ndvi %&gt;% filter(band == &quot;500_m_16_days_NDVI&quo
 href="https://rspatial.org/terra/modis/index.html"><code>terra</code>
 chapter</a> in the <a href="https://rspatial.org/">rspatial book</a> has
 lots of excellent tutorials on the theory and application of the
-<code>terra</code> package in R.</p>
+<code>terra</code> package in R. Find more information on
+<code>MODISTools</code> <a
+href="https://jepsonnomad.github.io/tutorials/MODISTools_Intro.html">here</a>
+and <a
+href="https://onlinelibrary.wiley.com/doi/10.1002/ece3.1273">here</a></p>
 </div>
 </div>
 
