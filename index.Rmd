@@ -16,11 +16,11 @@ This short workshop for SAEON GSN will introduce you to spatial data and analysi
 
 1. Making a map
 
-2. Time series analysis
+2. NDVI time series
 
 3. Land cover change
 
-4. Species distribution modeling
+4. Species distribution models
 
 If you have not used R before, I highly recommend going over the content provided in the [Basics of R workshop](https://jdmwhite.github.io/R_Workshop/) previously run with the SAEON GSN. Basic instructions on downloading R and R Studio can be found below.
 
