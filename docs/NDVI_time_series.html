@@ -321,7 +321,7 @@ div.tocify {
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="index.html">Intro to Spatial Data in R</a>
+      <a class="navbar-brand" href="index.html"></a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
@@ -338,7 +338,7 @@ div.tocify {
   <a href="Land_cover_change.html">Land cover change</a>
 </li>
 <li>
-  <a href="sdm.html">Species Distribution Models</a>
+  <a href="SDMs.html">SDMs</a>
 </li>
 <li>
   <a href="extras.html">Extras</a>
@@ -613,7 +613,7 @@ jhb_ndvi &lt;- mt_subset(product = &quot;VNP13A1&quot;,
 <pre class="r"><code>end_time &lt;- Sys.time()
 # How long does it take to download 200 km2 of VIIRS NDVI data at 500 m resolution for 2 bands?
 end_time - start_time</code></pre>
-<pre><code>## Time difference of 1.280233 mins</code></pre>
+<pre><code>## Time difference of 1.285192 mins</code></pre>
 <p>Impressively, this only took 1.5 minutes to download 46 images overe
 200 km2. An interesting feature of the <code>MODISTools</code> package,
 is that it downloads data as a <code>data.frame</code>. This makes it

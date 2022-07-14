@@ -1,0 +1,19 @@
+---
+title: "Extras"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    collapsed: false
+    number_sections: false
+    toc_depth: 4
+    theme: paper
+---
+
+### Learning objectives
+
+### Introduction
+
+### Tutorial 1: extracting raster data by vectors
+
+### Tutorial 2: loading in netCDF files
