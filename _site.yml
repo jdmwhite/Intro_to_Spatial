@@ -4,6 +4,10 @@ navbar:
   left:
     - text: "Home"
       href: index.html
+    - text: 'Making a map'
+      href: Making_a_map.html
+    - text: 'NDVI time series'
+      href: NDVI_time_series.html
     - text: "Additional Resources"
       href: Resources.html
 output_dir: "docs"

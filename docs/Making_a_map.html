@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Making a map</title>
+
+<script src="site_libs/header-attrs-2.14/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/paper.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<script src="site_libs/clipboard-1.7.1/clipboard.min.js"></script>
+<link href="site_libs/primer-tooltips-1.4.0/build.css" rel="stylesheet" />
+<link href="site_libs/klippy-0.0.0.9500/css/klippy.min.css" rel="stylesheet" />
+<script src="site_libs/klippy-0.0.0.9500/js/klippy.min.js"></script>
+<link href="site_libs/vembedr-0.1.5/css/vembedr.css" rel="stylesheet" />
+<script src="site_libs/htmlwidgets-1.5.4/htmlwidgets.js"></script>
+<link href="site_libs/leaflet-1.3.1/leaflet.css" rel="stylesheet" />
+<script src="site_libs/leaflet-1.3.1/leaflet.js"></script>
+<link href="site_libs/leafletfix-1.0.0/leafletfix.css" rel="stylesheet" />
+<script src="site_libs/proj4-2.6.2/proj4.min.js"></script>
+<script src="site_libs/Proj4Leaflet-1.0.1/proj4leaflet.js"></script>
+<link href="site_libs/rstudio_leaflet-1.3.1/rstudio_leaflet.css" rel="stylesheet" />
+<script src="site_libs/leaflet-binding-2.1.1/leaflet.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Intro to Spatial Data in R</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="Making_a_map.html">Making a map</a>
+</li>
+<li>
+  <a href="NDVI_time_series.html">NDVI time series</a>
+</li>
+<li>
+  <a href="Resources.html">Additional Resources</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Making a map</h1>
+
+</div>
+
+
+<script>
+  addClassKlippyTo("pre.r, pre.markdown");
+  addKlippy('right', 'top', 'auto', '1', 'Copy code', 'Copied!');
+</script>
+<div id="learning-objectives" class="section level3">
+<h3>Learning objectives</h3>
+<ol style="list-style-type: decimal">
+<li>Download species locations &amp; map layers</li>
+<li>Process spatial data</li>
+<li>Produce a publication ready map</li>
+</ol>
+</div>
+<div id="introduction" class="section level3">
+<h3>Introduction</h3>
+<p>For many research papers, reports or popular science articles it is
+increasingly valuable to provide a spatial context to your findings.
+Visual aids, such as maps, can be excellent communication tools when
+sharing your findings with colleagues or the public. It involves
+communication, intuition and a bit of imagination. However, if used
+badly, they can lose their meaning or provide straight up <a
+href="https://www.vox.com/2015/2/18/8056325/bad-maps">disinformation</a>.</p>
+<p>To create your own maps, it is important to understand some of the
+core types of data that you may be using. Spatial data comes in two
+formats: <strong>vectors</strong> and <strong>rasters</strong>.</p>
+</div>
+<div id="vector-data" class="section level3">
+<h3>Vector data</h3>
+<p><strong>Vectors</strong> store information using either points, lines
+or polygons. You may be familiar with vectors in the format
+<strong>shapefiles</strong> (.shp),
+<strong>kmz</strong>/<strong>kml</strong> or <strong>gpx</strong>. We
+will mostly work with <strong>shapefiles</strong>. Vector files are
+useful for delineating boundaries, such as those for countries,
+protected areas. They are also often used for displaying lines or
+points, such as roads or species locations, respectively.</p>
+<div class="figure" style="text-align: center">
+<img src="images/sf-classes.png" alt="Different types of vector features supported by `sf` (or simple feature) package. Credit: Lovelace, Nowosad, Muenchow 2022: Geocomputation with R. Chapter 2" width="60%" />
+<p class="caption">
+Different types of vector features supported by <code>sf</code> (or
+simple feature) package. Credit: Lovelace, Nowosad, Muenchow 2022:
+Geocomputation with R. Chapter 2
+</p>
+</div>
+<p>There are several different R packages for using vector data, however
+in this practical, we will focus on the <code>sf</code> package for
+handling and displaying vector data. <code>sf</code> is useful for
+handling spatial data as the vector objects can be treated like data
+frames in most functions and in can be combined with the pipe operator
+<code>%&gt;%</code> and works well with the <code>tidyverse</code> group
+of R packages. This includes integration into the <code>ggplot2</code>
+package, which will help us with making maps later.</p>
+</div>
+<div id="raster-data" class="section level3">
+<h3>Raster data</h3>
+<p><strong>Rasters</strong> represent data in a grid of ‘cells’, which
+are typically referred to as ‘pixels’. Generally, these cells/pixels
+have a constant size or spatial resolution (e.g. mm/m/km).
+<strong>Rasters</strong> are formatted as a matrix, with rows and
+columns. Each <strong>raster</strong> will also come with a ‘header’ or
+metadata, which includes information on the coordinate reference system
+(which we discuss later), an extent and an origin.</p>
+<p>The values inside each raster cell can represent either
+<em>continuous</em> or <em>categorical</em> data. Continuous data may
+include values such as temperature, elevation or spectral data (see
+Practical 2). Categorical data may include land cover types (see
+Practical 4) or discrete categories of soil classes.</p>
+<div class="figure" style="text-align: center">
+<img src="images/raster-intro-plot2-1.png" alt="Different types of raster data. Credit: Lovelace, Nowosad, Muenchow 2022: Geocomputation with R. Chapter 2" width="60%" />
+<p class="caption">
+Different types of raster data. Credit: Lovelace, Nowosad, Muenchow
+2022: Geocomputation with R. Chapter 2
+</p>
+</div>
+<p>Much like vector data, there are several R packages available for
+handling raster data. In this course, we will focus on the
+<code>terra</code> package to help streamline your learning process.
+<code>terra</code> is the natural successor to the <code>raster</code>
+package. The <code>terra</code> package is faster and provides update
+functionality to the <code>raster</code> package.</p>
+</div>
+<div id="coordinate-reference-systems" class="section level3">
+<h3>Coordinate Reference Systems</h3>
+<p>The last topic to introduce you to before getting coding is
+<strong>Coordinate Reference System</strong> or <strong>CRS</strong>.
+Both raster and vector data share this property. It defines our spatial
+objects are represented on the surface of the earth.</p>
+<p>CRSs can be either <strong>GEOGRAPHIC</strong> or
+<strong>PROJECTED</strong>.</p>
+<p><strong>Geographic</strong> CRSs specify a location on the surface of
+the earth using <strong>LONGITUDE</strong> and
+<strong>LATITUDE</strong>. This means that distances are not measured in
+meters, as the earth is measured as 3D-surface: either a spherical or
+ellipsoidal surface.</p>
+<p><strong>Projected</strong> CRSs represent a projected surface of the
+3D earth onto a 2D. These allow distances to be measured in meters.
+Every projection will have some kind of distortion. This distortion will
+impact the area, direction, distance or shape of the projection. This
+means it is important to keep in mind when doing area or distance based
+calculations! The best tip is to make sure that your projection matches
+the space that you are working in.</p>
+<p>Watch this video to get a better visual idea of the difference
+between a <strong>Geographic</strong> and <strong>Projected</strong>
+CRS:</p>
+<div class="vembedr embed-responsive embed-responsive-16by9" align="center">
+<div>
+<iframe src="https://www.youtube.com/embed/kIID5FDi2JQ" width="533" height="300" frameborder="0" allowfullscreen="" data-external="1" class="embed-responsive-item"></iframe>
+</div>
+</div>
+<p>To find a list of all available projections use this function:
+<code>sf_proj_info(type = "proj")</code> and more information on each
+one can be seen at <a href="https://www.geo-projections.com/">Geo
+Projections</a>. The webpage <a
+href="https://thetruesize.com">thetruesize</a>, is also a fun and useful
+tool to explore how the Mercator projection distorts areas.</p>
+</div>
+<div id="tutorial" class="section level3">
+<h3>Tutorial</h3>
+<p>That covers the basics. For a fuller explanation of these basics,
+please visit the <a
+href="https://geocompr.robinlovelace.net/spatial-class.html#spatial-class">Geocomputation
+with R</a> notebook. In this practical, you will become more familiar
+with <strong>vector</strong> based data for making a map of species
+localities. In the following practicals, you will get some more
+experience in handling <strong>raster</strong> based data. Let’s get
+started with coding. The first step in our coding workflow is to install
+and load the required packages:</p>
+<pre class="r"><code># install.packages(&#39;rgbif&#39;)
+# install.packages(&#39;tidyverse&#39;)
+# install.packages(&#39;CoordinateCleaner&#39;)
+# install.packages(&#39;rnaturalearth&#39;)
+# install.packages(&#39;sf&#39;)
+# install.packages(&#39;leaflet&#39;)
+# install.packages(&#39;ggspatial&#39;)
+# install.packages(&#39;patchwork&#39;)
+
+library(tidyverse)
+library(rgbif)
+library(CoordinateCleaner)
+library(rnaturalearth)
+library(sf)
+library(leaflet)
+library(ggspatial)
+library(patchwork)
+
+# # Alternative method to load many libraries
+# if(!require(&quot;pacman&quot;)) install.packages(&quot;pacman&quot;)
+# pacman::p_load(tidyverse, rgbif, CoordinateCleaner, rnaturalearth, sf, leaflet, ggspatial, patchwork)</code></pre>
+<div id="downloading-cleaning-species-data-from-gbif"
+class="section level4">
+<h4>Downloading &amp; cleaning species data from GBIF</h4>
+<p>We will download the data from the Global Biodiversity Information
+Facility (<a href="https://www.gbif.org/">GBIF</a>). This is a massive
+online database of museum, herbarium, large database and in person
+observations. It has recently been integrated with <a
+href="https://www.inaturalist.org/">iNaturalist</a> (a citizen science
+based observation platform), meaning it has both historical and
+contemporary observations.</p>
+<p>We will be working on <em>Protea roupelliae</em>. A summer rainfall
+<em>Protea</em> species, which occurs extensively across eastern South
+Africa, Lesotho and eSwatini. There are two subspecies, but we will
+treat these as the same thing in this practical</p>
+<pre class="r"><code># Name your species
+myspecies &lt;- c(&quot;protea roupelliae&quot;)
+
+# download GBIF occurrence data for this species; this takes time if there are many data points!
+gbif_download &lt;- occ_data(scientificName = myspecies, hasCoordinate = TRUE, limit = 1000)
+
+gbif_data &lt;- gbif_download$data
+names(gbif_data)[1:10]</code></pre>
+<pre><code>##  [1] &quot;key&quot;               &quot;scientificName&quot;    &quot;decimalLatitude&quot;  
+##  [4] &quot;decimalLongitude&quot;  &quot;issues&quot;            &quot;datasetKey&quot;       
+##  [7] &quot;publishingOrgKey&quot;  &quot;installationKey&quot;   &quot;publishingCountry&quot;
+## [10] &quot;protocol&quot;</code></pre>
+<p>The GBIF data includes many historical observations, which were taken
+before the use of GPS. Because of this, the locations provided may have
+errors, lack precision or may not be at the required spatial scale for
+downstream analysis. Please read <a
+href="https://assets.ctfassets.net/uo17ejk9rkwj/46SfGRfOesU0IagMMAOIkk/1c03ea3e21fcd9025cc800d786890e72/Principles_20and_20Methods_20of_20Data_20Cleaning_20-_20ENGLISH.pdf">this
+text</a> for more information on why we need to clean GBIF location
+data.</p>
+<p>We use the <code>CoordinateCleaner</code> package to use some useful
+functions that allow for easy cleaning of the locality data. Each
+function gives an output telling us how many observations were
+dropped.</p>
+<pre class="r"><code>gbif_data %&gt;%
+  filter(year &gt;= 1900) %&gt;%
+  filter(!coordinateUncertaintyInMeters %in% c(301,3036,999,9999)) %&gt;% # known inaccurate default values
+  filter(!decimalLatitude == 0 | !decimalLongitude == 0) %&gt;%
+  cc_cen(lat = &#39;decimalLatitude&#39;, lon = &#39;decimalLongitude&#39;, buffer = 2000) %&gt;% # remove country centroids within 2km 
+  cc_cap(lat = &#39;decimalLatitude&#39;, lon = &#39;decimalLongitude&#39;, buffer = 2000) %&gt;% # remove capitals centroids within 2km
+  cc_inst(lat = &#39;decimalLatitude&#39;, lon = &#39;decimalLongitude&#39;, buffer = 2000) %&gt;% # remove zoo and herbaria within 2km 
+  cc_sea(lat = &#39;decimalLatitude&#39;, lon = &#39;decimalLongitude&#39;) %&gt;% # remove from ocean 
+  distinct(decimalLongitude,decimalLatitude,speciesKey,datasetKey, .keep_all = TRUE) -&gt; p_roup</code></pre>
+<pre><code>## Testing sea coordinates</code></pre>
+<pre><code>## Testing biodiversity institutions</code></pre>
+<pre><code>## Testing country capitals</code></pre>
+<pre><code>## Testing country centroids</code></pre>
+<pre><code>## Removed 0 records.
+## Removed 0 records.</code></pre>
+<pre><code>## Removed 26 records.</code></pre>
+<pre><code>## OGR data source with driver: ESRI Shapefile 
+## Source: &quot;/private/var/folders/x4/zllw3fdd4dz3y7trfk3ff4cm0000gn/T/RtmpqMOx6b&quot;, layer: &quot;ne_110m_land&quot;
+## with 127 features
+## It has 3 fields</code></pre>
+<pre><code>## Removed 29 records.</code></pre>
+</div>
+<div id="downloading-country-boundaries" class="section level4">
+<h4>Downloading country boundaries</h4>
+<p>Next we use the <code>rnaturalearth</code> package to download
+country boundaries. We start with all world countries and then plot this
+using <code>ggplot2</code> and use the default GDP dataset for
+visualisation purposes.</p>
+<pre class="r"><code># using the maps package, download and convert the download to an sf object
+world &lt;- ne_countries(scale = &#39;medium&#39;, returnclass = &#39;sf&#39;)
+names(world)</code></pre>
+<pre><code>##  [1] &quot;scalerank&quot;  &quot;featurecla&quot; &quot;labelrank&quot;  &quot;sovereignt&quot; &quot;sov_a3&quot;    
+##  [6] &quot;adm0_dif&quot;   &quot;level&quot;      &quot;type&quot;       &quot;admin&quot;      &quot;adm0_a3&quot;   
+## [11] &quot;geou_dif&quot;   &quot;geounit&quot;    &quot;gu_a3&quot;      &quot;su_dif&quot;     &quot;subunit&quot;   
+## [16] &quot;su_a3&quot;      &quot;brk_diff&quot;   &quot;name&quot;       &quot;name_long&quot;  &quot;brk_a3&quot;    
+## [21] &quot;brk_name&quot;   &quot;brk_group&quot;  &quot;abbrev&quot;     &quot;postal&quot;     &quot;formal_en&quot; 
+## [26] &quot;formal_fr&quot;  &quot;note_adm0&quot;  &quot;note_brk&quot;   &quot;name_sort&quot;  &quot;name_alt&quot;  
+## [31] &quot;mapcolor7&quot;  &quot;mapcolor8&quot;  &quot;mapcolor9&quot;  &quot;mapcolor13&quot; &quot;pop_est&quot;   
+## [36] &quot;gdp_md_est&quot; &quot;pop_year&quot;   &quot;lastcensus&quot; &quot;gdp_year&quot;   &quot;economy&quot;   
+## [41] &quot;income_grp&quot; &quot;wikipedia&quot;  &quot;fips_10&quot;    &quot;iso_a2&quot;     &quot;iso_a3&quot;    
+## [46] &quot;iso_n3&quot;     &quot;un_a3&quot;      &quot;wb_a2&quot;      &quot;wb_a3&quot;      &quot;woe_id&quot;    
+## [51] &quot;adm0_a3_is&quot; &quot;adm0_a3_us&quot; &quot;adm0_a3_un&quot; &quot;adm0_a3_wb&quot; &quot;continent&quot; 
+## [56] &quot;region_un&quot;  &quot;subregion&quot;  &quot;region_wb&quot;  &quot;name_len&quot;   &quot;long_len&quot;  
+## [61] &quot;abbrev_len&quot; &quot;tiny&quot;       &quot;homepart&quot;   &quot;geometry&quot;</code></pre>
+<pre class="r"><code># We can easily plot the world map layer using ggplot
+ggplot() +
+  geom_sf(data = world, aes(fill = gdp_md_est)) + # use the fill option within the aesthetics parameter
+  scale_fill_viridis_c(trans = &#39;log&#39;, name = &#39;GDP (log)&#39;) # chose a palette for the colour gradient, transform the variable and add a name for the legend</code></pre>
+<p><img src="Making_a_map_files/figure-html/Download%20map%20layers-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Importantly, to convert a 3D space (the earth as a sphere) into a 2D
+image, we need to ‘project’ the world. There are many different attempts
+at accurate projections, but they normally need to compromise between
+area, shape and distance. The projection is important to keep in mind if
+you are doing any area or distance calculations. Generally, you will
+want to use a local or regional projection for this. Read some
+additional resources on projections <a
+href="https://geocompr.robinlovelace.net/reproj-geo-data.html">here</a>,
+<a
+href="http://companion.soep.de/Working%20with%20SOEP%20Data/Working%20with%20spatial%20data%20in%20R.html">here</a>
+and <a
+href="https://michaelminn.net/tutorials/r-projections/index.html">here</a>.
+Let’s try the Lambert Azimuthal Equal-Area projection:</p>
+<pre class="r"><code># We can also change the projection of the coordinate reference system (CRS)
+ggplot() +
+  geom_sf(data = world, aes(fill = gdp_md_est)) +
+  scale_fill_viridis_c(trans = &#39;log&#39;, name = &#39;GDP (log)&#39;) +
+  coord_sf(crs = 3035)</code></pre>
+<p><img src="Making_a_map_files/figure-html/Changing%20projections-1.png" width="672" /></p>
+</div>
+<div id="refining-our-map-plotting-our-species-localities"
+class="section level4">
+<h4>Refining our map &amp; plotting our species localities</h4>
+<p>Let’s move our focus back to our species map for Protea roupelliae.
+We now want to filter down the countries included in a country boundary
+dataset to only include those within our region of interest.</p>
+<pre class="r"><code># Create a vector of names for countries we want to use (= southern African countries) to filter to our area of focus
+countries &lt;- c(&#39;South Africa&#39;, &#39;Lesotho&#39;, &#39;Swaziland&#39;, &#39;Namibia&#39;, &#39;Botswana&#39;, &#39;Zimbabwe&#39;, &#39;Mozambique&#39;)
+
+# Now filter down the list of all countries to only include southern African countries
+world %&gt;% filter(admin %in% countries) -&gt; sern_a
+
+# Plot this using geom_sf from ggplot()
+ggplot() +
+  geom_sf(data = sern_a) </code></pre>
+<p><img src="Making_a_map_files/figure-html/Refining%20map%20focus-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># This looks a bit strange, it includes Marion Island in the sub-antarctic, which is part of South Africa!
+# Remove this by setting limits on the x and y axes
+base_plot1 &lt;- ggplot() + # save the output of the map to an object
+  geom_sf(data = sern_a) +
+  scale_x_continuous(limits = c(16, 33)) +
+  scale_y_continuous(limits = c(-35, -22))
+base_plot1 # print this object, we can now reuse &#39;base_plot1&#39; and add to it later</code></pre>
+<p><img src="Making_a_map_files/figure-html/Refining%20map%20focus-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>We can now plot add our species locality points to the map! First
+clean up the GBIF dataset a bit further and then convert the
+<code>data.frame</code> to a <code>simple feature</code> or
+<code>sf</code> object.</p>
+<pre class="r"><code># Now we&#39;re focused in on South Africa, let&#39;s add the GBIF points to the map
+# First clean the dataset by selecting only the columns we need, rename the variables
+p_roup %&gt;% select(key, year, basisOfRecord, decimalLongitude, decimalLatitude) %&gt;% rename(lon = decimalLongitude, lat = decimalLatitude) -&gt; pr_clean
+
+# Now we want to convert &amp; project our data to the correct Coordinate Reference System
+pr_no_crs &lt;- st_as_sf(pr_clean, coords = c(&#39;lon&#39;, &#39;lat&#39;))
+st_crs(pr_no_crs) # as we converted these directly from GPS points, there is no set CRS</code></pre>
+<pre><code>## Coordinate Reference System: NA</code></pre>
+<pre class="r"><code># Let&#39;s try plot this
+base_plot1 +
+  geom_sf(data = pr_no_crs)</code></pre>
+<pre><code>## Error in st_transform.sfc(X[[i]], ...): cannot transform sfc object with missing crs</code></pre>
+<p>When we try to plot this we get an error… This is because we have
+simply used the longitude and latitude coordinates without provided a
+coordinate reference system (CRS). Let’s provide a CRS and try
+again:</p>
+<pre class="r"><code>st_crs(sern_a)$input # first see what CRS the map layers have</code></pre>
+<pre><code>## [1] &quot;+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0&quot;</code></pre>
+<pre class="r"><code>pr_WGS_84 &lt;- pr_no_crs # create a new object for the points
+st_crs(pr_WGS_84) = 4326 # assigning it the CRS 4326, which is short for the World Geodetic System 1984 (WGS 84), a spatial reference system. 
+st_crs(pr_WGS_84)$input # check that this worked. These give different input codes. One using the proj4string and the other the EPSG code. These are essentially the same thing. </code></pre>
+<pre><code>## [1] &quot;EPSG:4326&quot;</code></pre>
+<pre class="r"><code># Let&#39;s try plot this now
+base_plot1 +
+  geom_sf(data = pr_WGS_84) </code></pre>
+<p><img src="Making_a_map_files/figure-html/plot%20location%20points%202-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="interactive-maps-to-identify-odd-features"
+class="section level4">
+<h4>Interactive maps to identify odd features</h4>
+<p>Some of these points look a bit strange. It is always good to inspect
+these to see if they may be an issue later. We can make a simple
+interactive map to explore this. We can use the <code>leaflet</code>
+package to make interactive maps. Let’s include information on the date
+&amp; type of the observation.</p>
+<pre class="r"><code># First we want to add lon and lat as variables to our sf object
+pr_WGS_84$lon &lt;- pr_clean$lon
+pr_WGS_84$lat &lt;- pr_clean$lat
+
+leaflet(data = pr_WGS_84) %&gt;% addTiles() %&gt;%
+  addCircleMarkers(popup = ~as.character(paste0(basisOfRecord, &#39;; &#39;, year, &#39;; &#39;, lon, &#39;; &#39;, lat)), radius = 2)</code></pre>
+<div id="htmlwidget-60ba387b61c302b59654" style="width:672px;height:480px;" class="leaflet html-widget"></div>
+<script type="application/json" data-for="htmlwidget-60ba387b61c302b59654">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"addTiles","args":["https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",null,null,{"minZoom":0,"maxZoom":18,"tileSize":256,"subdomains":"abc","errorTileUrl":"","tms":false,"noWrap":false,"zoomOffset":0,"zoomReverse":false,"opacity":1,"zIndex":1,"detectRetina":false,"attribution":"&copy; <a href=\"https://openstreetmap.org\">OpenStreetMap<\/a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA<\/a>"}]},{"method":"addCircleMarkers","args":[[-30.155572,-30.817608,-26.067892,-30.153075,-29.615733,-30.36793,-24.74893,-30.983633,-24.748947,-26.071386,-29.481658,-26.069376,-29.628389,-25.307807,-26.078796,-25.215137,-26.079416,-26.128976,-26.12687,-26.129808,-29.624444,-24.84271,-25.581853,-26.136295,-29.810863,-25.799368,-25.799376,-29.105682,-26.131335,-26.135083,-26.1251,-29.740163,-26.133353,-24.894776,-25.406326,-25.405588,-24.890278,-25.406114,-28.948591,-29.813557,-26.127287,-28.718225,-29.367735,-25.793959,-22.970945,-25.284498,-28.761016,-25.397066,-28.529904,-29.286303,-29.62735,-24.680665,-28.5552,-28.722107,-28.704277,-29.77462,-24.842754,-29.286926,-22.980967,-25.781289,-25.427938,-31.278751,-26.275039,-29.296112,-29.765751,-25.30047,-25.284045,-31.608867,-24.050828,-29.849196,-25.799325,-22.981496,-29.667911,-31.013191,-24.4675,-30.753853,-30.283807,-30.30278,-27.916994,-27.511237,-24.462427,-30.909882,-25.561247,-29.622612,-26.137147,-29.617773,-23.981775,-24.006083,-29.327297,-25.600613,-30.167173,-23.018487,-26.1334,-31.412163,-25.869505,-25.10805,-27.816111,-25.104958,-25.103375,-26.133601,-25.7869,-27.816378,-25.806403,-28.779,-29.389772,-30.612945,-29.39288,-29.263692,-25.270353,-25.315065,-29.612887,-29.611997,-25.794573,-25.79457,-26.07722,-27.549467,-25.775226,-27.742361,-25.561293,-29.28757,-24.933333,-30.226877,-28.555,-26.194963,-25.787575,-25.804964,-26.136036,-29.860509,-29.86325,-26.128822,-25.587745,-26.136152,-24.009625,-29.61771,-24.051003,-27.917115,-29.689525,-29.646712,-25.91883,-23.853362,-30.07837,-26.133821,-30.082784,-29.63667,-29.762367,-29.270553,-23.854301,-23.019281,-23.802502,-29.627712,-26.11198,-26.140325,-25.886292,-26.183047,-29.614357,-29.662079,-29.619939,-26.197637,-26.061675,-26.024713,-24.467535,-24.52207,-31.609954,-24.001718,-30.925494,-29.622944,-29.637619,-25.056159,-25.856928,-25.79,-26.078505,-24.340282,-29.640048,-26.154416,-26.028669,-26.131247,-26.079947,-26.086021,-29.328366,-29.386053,-29.60167,-29.56226,-29.64384,-28.948923,-29.054935,-29.054963,-28.52541,-25.792337,-29.62365,-31.60458,-26.134609,-28.56869,-25.79358,-28.545867,-28.967748,-29.7215,-25.14357,-29.057567,-25.14345,-25.795,-28.638514,-30.430982,-29.658729,-29.766111,-28.675303,-28.63476,-25.641897,-29.619174,-25.39859,-25.053648,-25.073289,-28.26315,-28.25806,-26.191623,-25.100225,-28.579387,-25.375,-25.117778,-25.287778,-29.598576,-29.05355,-25.125,-25.125,-23.851944,-26.596088,-31.125,-25.875,-24.375,-26.125,-30.125,-31.375,-25.375,-28.375,-25.81111,-30.933333,-30.75,-25.125,-25.125,-26.125,-29.616667,-29.625,-28.9233,-24.875,-30.875,-30.625,-30.625,-25.79912,-24.625,-29.7167,-29.875,-28.875,-32.375,-25.830833,-28.625,-29.625,-25.875,-24.875,-28.875,-25.83,-23.875,-25.828611,-25.805833,-31.375,-31.625,-24.125,-24.125,-29.875,-31.375,-24.5422,-24.125,-27.875,-25.9054,-23.875,-25.625,-25.808333,-25.47717,-26.625,-30.625,-28.375,-30.375,-28.375,-29.125,-30.875,-25.766111,-29.125,-24.125,-24.125,-22.875,-30.625,-27.875,-31.625,-30.375,-29.375,-29.375,-23.5973,-28.1198,-30.875,-23.125,-23.125,-23.875,-27.375,-22.875,-24.375,-28.125,-28.125,-26.233333,-29.125,-29.375,-27.875,-25.625,-31.375,-24.375,-26.375,-27.2167,-28.625,-25.625,-25.625,-29.5,-26.125,-24.625,-31.375,-25.125,-23.125,-28.125,-23.83363,-28.625,-29.125,-26.125,-28.625,-25.7908,-30.7,-25.8814,-24.625,-22.875,-27.875,-25.875,-25.875,-31.375,-25.08278,-25.04953,-25.78611,-30.375,-29.625,-24.875,-28.875,-28.625,-28.875,-28.6864,-26.625,-27.29127,-30.4972,-30.26118,-30.375,-33.625,-24.125,-30.875,-29.625],[28.679968,28.209153,27.773961,28.681781,29.376542,28.801844,30.867497,28.147657,30.867472,27.818485,29.722005,27.816514,29.406295,30.147527,27.826663,30.143575,27.826328,27.884322,27.881587,27.885405,29.400556,30.661615,30.431739,27.889948,30.776188,27.627753,27.62793,29.436934,27.886817,31.106678,27.88546,29.37907,27.884595,30.678227,30.109488,30.113832,30.679444,30.111042,29.221072,30.815564,27.885957,31.065568,29.779276,31.082537,29.956666,30.525357,28.95948,29.990045,28.666325,30.29237,29.42073,30.085522,29.15037,28.92898,28.895168,30.191307,30.661766,30.292931,29.552625,28.091506,30.240188,29.87941,31.133733,30.297653,30.825453,30.507287,30.525272,29.52537,29.865147,29.193096,27.628054,29.538139,29.451541,28.160331,27.612644,28.308608,28.664367,28.675353,29.687692,30.372983,27.613212,30.147392,30.209862,29.392392,27.888838,29.380931,29.953593,29.951096,29.719511,31.499905,28.700971,29.5156,27.883246,29.72037,31.024813,30.086048,31.040556,30.601112,30.606512,27.881058,31.068647,31.039628,30.77536,31.171053,29.669476,29.664323,29.668088,29.53456,30.527788,30.142347,29.368447,29.367242,31.083737,31.083735,27.82527,31.273191,31.044977,29.705025,30.209703,30.2928,30.716667,28.705451,29.149723,31.03097,31.083339,30.775078,31.116962,29.175021,29.17324,27.886317,31.48167,27.88624,30.072657,29.379045,29.864897,29.688953,29.317532,29.453777,27.818958,29.895863,28.927036,27.882045,28.947121,29.463851,29.22653,29.522675,29.891279,29.431575,29.951574,29.403641,27.845612,27.89745,31.097378,27.804738,29.371531,29.456151,29.386617,27.838,27.998544,27.957196,27.614655,27.49318,29.511702,29.948554,28.208331,29.382392,29.424113,30.596314,30.943065,31.21,27.825034,27.612534,29.455011,27.896138,27.821707,27.941662,27.984033,27.973138,29.686531,29.667074,29.326786,29.5742,30.84095,29.21031,29.397452,29.397388,28.656083,31.15587,29.399492,29.52747,31.106331,29.12533,31.087895,29.16434,29.201858,29.5562,30.622361,29.385164,30.62235,31.08337,28.957996,29.673383,29.438641,30.835278,28.914964,28.9463,30.880767,29.383815,30.073831,30.570175,30.548723,29.58407,29.56486,31.032227,30.554157,29.050978,30.625,30.525278,30.5225,29.309877,29.406644,29.875,30.125,29.895833,28.445506,28.125,31.125,30.375,31.125,28.625,28.375,30.125,28.625,31.0872,30.183333,28.25,30.625,30.375,27.875,29.383333,29.375,29.1344,30.625,30.125,30.375,29.625,31.08639,30.875,29.7667,30.875,29.125,28.375,30.770278,29.125,31.125,30.875,30.875,30.875,30.83,29.875,30.8375,30.775833,27.375,27.625,29.625,29.875,29.125,27.875,30.86943,28.375,29.625,27.7549,30.125,30.625,30.776667,30.67372,28.375,30.125,29.375,30.625,29.125,30.625,29.375,30.816389,29.375,30.125,29.125,29.375,29.125,30.875,27.875,28.875,29.375,30.125,29.6245,29.1643,29.875,29.125,28.875,29.375,30.375,29.875,27.625,31.875,32.125,31.033333,29.875,29.625,31.375,30.875,29.625,28.375,31.125,30.4833,29.375,31.375,28.125,29.5,28.125,27.125,28.625,29.375,29.875,28.625,29.9963,31.125,29.625,27.625,28.875,27.7678,30.23333,27.6156,30.125,30.125,30.375,31.375,29.375,28.875,30.65,30.62395,31.05306,29.375,30.625,28.375,30.125,29.875,28.875,28.9094,29.875,28.5798,29.04511,30.42712,30.375,25.875,29.375,28.375,30.875],2,null,null,{"interactive":true,"className":"","stroke":true,"color":"#03F","weight":5,"opacity":0.5,"fill":true,"fillColor":"#03F","fillOpacity":0.2},null,null,["HUMAN_OBSERVATION; 2022; 28.679968; -30.155572","HUMAN_OBSERVATION; 2022; 28.209153; -30.817608","HUMAN_OBSERVATION; 2022; 27.773961; -26.067892","HUMAN_OBSERVATION; 2022; 28.681781; -30.153075","HUMAN_OBSERVATION; 2022; 29.376542; -29.615733","HUMAN_OBSERVATION; 2022; 28.801844; -30.36793","HUMAN_OBSERVATION; 2022; 30.867497; -24.74893","HUMAN_OBSERVATION; 2022; 28.147657; -30.983633","HUMAN_OBSERVATION; 2022; 30.867472; -24.748947","HUMAN_OBSERVATION; 2022; 27.818485; -26.071386","HUMAN_OBSERVATION; 2022; 29.722005; -29.481658","HUMAN_OBSERVATION; 2022; 27.816514; -26.069376","HUMAN_OBSERVATION; 2022; 29.406295; -29.628389","HUMAN_OBSERVATION; 2022; 30.147527; -25.307807","HUMAN_OBSERVATION; 2022; 27.826663; -26.078796","HUMAN_OBSERVATION; 2022; 30.143575; -25.215137","HUMAN_OBSERVATION; 2022; 27.826328; -26.079416","HUMAN_OBSERVATION; 2022; 27.884322; -26.128976","HUMAN_OBSERVATION; 2022; 27.881587; -26.12687","HUMAN_OBSERVATION; 2022; 27.885405; -26.129808","HUMAN_OBSERVATION; 2022; 29.400556; -29.624444","HUMAN_OBSERVATION; 2022; 30.661615; -24.84271","HUMAN_OBSERVATION; 2022; 30.431739; -25.581853","HUMAN_OBSERVATION; 2022; 27.889948; -26.136295","HUMAN_OBSERVATION; 2022; 30.776188; -29.810863","HUMAN_OBSERVATION; 2022; 27.627753; -25.799368","HUMAN_OBSERVATION; 2022; 27.62793; -25.799376","HUMAN_OBSERVATION; 2022; 29.436934; -29.105682","HUMAN_OBSERVATION; 2022; 27.886817; -26.131335","HUMAN_OBSERVATION; 2022; 31.106678; -26.135083","HUMAN_OBSERVATION; 2022; 27.88546; -26.1251","HUMAN_OBSERVATION; 2022; 29.37907; -29.740163","HUMAN_OBSERVATION; 2022; 27.884595; -26.133353","HUMAN_OBSERVATION; 2021; 30.678227; -24.894776","HUMAN_OBSERVATION; 2021; 30.109488; -25.406326","HUMAN_OBSERVATION; 2021; 30.113832; -25.405588","HUMAN_OBSERVATION; 2021; 30.679444; -24.890278","HUMAN_OBSERVATION; 2021; 30.111042; -25.406114","HUMAN_OBSERVATION; 2021; 29.221072; -28.948591","HUMAN_OBSERVATION; 2021; 30.815564; -29.813557","HUMAN_OBSERVATION; 2021; 27.885957; -26.127287","HUMAN_OBSERVATION; 2021; 31.065568; -28.718225","HUMAN_OBSERVATION; 2021; 29.779276; -29.367735","HUMAN_OBSERVATION; 2021; 31.082537; -25.793959","HUMAN_OBSERVATION; 2021; 29.956666; -22.970945","HUMAN_OBSERVATION; 2021; 30.525357; -25.284498","HUMAN_OBSERVATION; 2021; 28.95948; -28.761016","HUMAN_OBSERVATION; 2021; 29.990045; -25.397066","HUMAN_OBSERVATION; 2021; 28.666325; -28.529904","HUMAN_OBSERVATION; 2021; 30.29237; -29.286303","HUMAN_OBSERVATION; 2021; 29.42073; -29.62735","HUMAN_OBSERVATION; 2021; 30.085522; -24.680665","HUMAN_OBSERVATION; 2021; 29.15037; -28.5552","HUMAN_OBSERVATION; 2021; 28.92898; -28.722107","HUMAN_OBSERVATION; 2021; 28.895168; -28.704277","HUMAN_OBSERVATION; 2021; 30.191307; -29.77462","HUMAN_OBSERVATION; 2021; 30.661766; -24.842754","HUMAN_OBSERVATION; 2021; 30.292931; -29.286926","HUMAN_OBSERVATION; 2021; 29.552625; -22.980967","HUMAN_OBSERVATION; 2021; 28.091506; -25.781289","HUMAN_OBSERVATION; 2021; 30.240188; -25.427938","HUMAN_OBSERVATION; 2021; 29.87941; -31.278751","HUMAN_OBSERVATION; 2021; 31.133733; -26.275039","HUMAN_OBSERVATION; 2021; 30.297653; -29.296112","HUMAN_OBSERVATION; 2021; 30.825453; -29.765751","HUMAN_OBSERVATION; 2021; 30.507287; -25.30047","HUMAN_OBSERVATION; 2021; 30.525272; -25.284045","HUMAN_OBSERVATION; 2021; 29.52537; -31.608867","HUMAN_OBSERVATION; 2021; 29.865147; -24.050828","HUMAN_OBSERVATION; 2021; 29.193096; -29.849196","HUMAN_OBSERVATION; 2021; 27.628054; -25.799325","HUMAN_OBSERVATION; 2021; 29.538139; -22.981496","HUMAN_OBSERVATION; 2021; 29.451541; -29.667911","HUMAN_OBSERVATION; 2021; 28.160331; -31.013191","HUMAN_OBSERVATION; 2021; 27.612644; -24.4675","HUMAN_OBSERVATION; 2020; 28.308608; -30.753853","HUMAN_OBSERVATION; 2020; 28.664367; -30.283807","HUMAN_OBSERVATION; 2020; 28.675353; -30.30278","HUMAN_OBSERVATION; 2020; 29.687692; -27.916994","HUMAN_OBSERVATION; 2020; 30.372983; -27.511237","HUMAN_OBSERVATION; 2020; 27.613212; -24.462427","HUMAN_OBSERVATION; 2020; 30.147392; -30.909882","HUMAN_OBSERVATION; 2020; 30.209862; -25.561247","HUMAN_OBSERVATION; 2020; 29.392392; -29.622612","HUMAN_OBSERVATION; 2020; 27.888838; -26.137147","HUMAN_OBSERVATION; 2020; 29.380931; -29.617773","HUMAN_OBSERVATION; 2020; 29.953593; -23.981775","HUMAN_OBSERVATION; 2020; 29.951096; -24.006083","HUMAN_OBSERVATION; 2020; 29.719511; -29.327297","HUMAN_OBSERVATION; 2020; 31.499905; -25.600613","HUMAN_OBSERVATION; 2020; 28.700971; -30.167173","HUMAN_OBSERVATION; 2020; 29.5156; -23.018487","HUMAN_OBSERVATION; 2020; 27.883246; -26.1334","HUMAN_OBSERVATION; 2020; 29.72037; -31.412163","HUMAN_OBSERVATION; 2020; 31.024813; -25.869505","HUMAN_OBSERVATION; 2020; 30.086048; -25.10805","HUMAN_OBSERVATION; 2020; 31.040556; -27.816111","HUMAN_OBSERVATION; 2020; 30.601112; -25.104958","HUMAN_OBSERVATION; 2020; 30.606512; -25.103375","HUMAN_OBSERVATION; 2020; 27.881058; -26.133601","HUMAN_OBSERVATION; 2020; 31.068647; -25.7869","HUMAN_OBSERVATION; 2020; 31.039628; -27.816378","HUMAN_OBSERVATION; 2020; 30.77536; -25.806403","HUMAN_OBSERVATION; 2020; 31.171053; -28.779","HUMAN_OBSERVATION; 2020; 29.669476; -29.389772","HUMAN_OBSERVATION; 2020; 29.664323; -30.612945","HUMAN_OBSERVATION; 2020; 29.668088; -29.39288","HUMAN_OBSERVATION; 2020; 29.53456; -29.263692","HUMAN_OBSERVATION; 2019; 30.527788; -25.270353","HUMAN_OBSERVATION; 2019; 30.142347; -25.315065","HUMAN_OBSERVATION; 2019; 29.368447; -29.612887","HUMAN_OBSERVATION; 2019; 29.367242; -29.611997","HUMAN_OBSERVATION; 2019; 31.083737; -25.794573","HUMAN_OBSERVATION; 2019; 31.083735; -25.79457","HUMAN_OBSERVATION; 2019; 27.82527; -26.07722","HUMAN_OBSERVATION; 2019; 31.273191; -27.549467","HUMAN_OBSERVATION; 2019; 31.044977; -25.775226","HUMAN_OBSERVATION; 2019; 29.705025; -27.742361","HUMAN_OBSERVATION; 2019; 30.209703; -25.561293","HUMAN_OBSERVATION; 2019; 30.2928; -29.28757","HUMAN_OBSERVATION; 2019; 30.716667; -24.933333","HUMAN_OBSERVATION; 2019; 28.705451; -30.226877","HUMAN_OBSERVATION; 2019; 29.149723; -28.555","HUMAN_OBSERVATION; 2019; 31.03097; -26.194963","HUMAN_OBSERVATION; 2019; 31.083339; -25.787575","HUMAN_OBSERVATION; 2019; 30.775078; -25.804964","HUMAN_OBSERVATION; 2019; 31.116962; -26.136036","HUMAN_OBSERVATION; 2019; 29.175021; -29.860509","HUMAN_OBSERVATION; 2019; 29.17324; -29.86325","HUMAN_OBSERVATION; 2019; 27.886317; -26.128822","HUMAN_OBSERVATION; 2019; 31.48167; -25.587745","HUMAN_OBSERVATION; 2019; 27.88624; -26.136152","HUMAN_OBSERVATION; 2019; 30.072657; -24.009625","HUMAN_OBSERVATION; 2019; 29.379045; -29.61771","HUMAN_OBSERVATION; 2019; 29.864897; -24.051003","HUMAN_OBSERVATION; 2019; 29.688953; -27.917115","HUMAN_OBSERVATION; 2018; 29.317532; -29.689525","HUMAN_OBSERVATION; 2018; 29.453777; -29.646712","HUMAN_OBSERVATION; 2018; 27.818958; -25.91883","HUMAN_OBSERVATION; 2018; 29.895863; -23.853362","HUMAN_OBSERVATION; 2018; 28.927036; -30.07837","HUMAN_OBSERVATION; 2018; 27.882045; -26.133821","HUMAN_OBSERVATION; 2018; 28.947121; -30.082784","HUMAN_OBSERVATION; 2018; 29.463851; -29.63667","HUMAN_OBSERVATION; 2018; 29.22653; -29.762367","HUMAN_OBSERVATION; 2018; 29.522675; -29.270553","HUMAN_OBSERVATION; 2018; 29.891279; -23.854301","HUMAN_OBSERVATION; 2018; 29.431575; -23.019281","HUMAN_OBSERVATION; 2018; 29.951574; -23.802502","HUMAN_OBSERVATION; 2018; 29.403641; -29.627712","HUMAN_OBSERVATION; 2018; 27.845612; -26.11198","HUMAN_OBSERVATION; 2017; 27.89745; -26.140325","HUMAN_OBSERVATION; 2017; 31.097378; -25.886292","HUMAN_OBSERVATION; 2017; 27.804738; -26.183047","HUMAN_OBSERVATION; 2017; 29.371531; -29.614357","HUMAN_OBSERVATION; 2017; 29.456151; -29.662079","HUMAN_OBSERVATION; 2017; 29.386617; -29.619939","HUMAN_OBSERVATION; 2017; 27.838; -26.197637","HUMAN_OBSERVATION; 2017; 27.998544; -26.061675","HUMAN_OBSERVATION; 2017; 27.957196; -26.024713","HUMAN_OBSERVATION; 2017; 27.614655; -24.467535","HUMAN_OBSERVATION; 2017; 27.49318; -24.52207","HUMAN_OBSERVATION; 2017; 29.511702; -31.609954","HUMAN_OBSERVATION; 2017; 29.948554; -24.001718","HUMAN_OBSERVATION; 2016; 28.208331; -30.925494","HUMAN_OBSERVATION; 2016; 29.382392; -29.622944","HUMAN_OBSERVATION; 2016; 29.424113; -29.637619","HUMAN_OBSERVATION; 2016; 30.596314; -25.056159","HUMAN_OBSERVATION; 2015; 30.943065; -25.856928","HUMAN_OBSERVATION; 2015; 31.21; -25.79","HUMAN_OBSERVATION; 2015; 27.825034; -26.078505","HUMAN_OBSERVATION; 2015; 27.612534; -24.340282","HUMAN_OBSERVATION; 2015; 29.455011; -29.640048","HUMAN_OBSERVATION; 2015; 27.896138; -26.154416","HUMAN_OBSERVATION; 2015; 27.821707; -26.028669","HUMAN_OBSERVATION; 2015; 27.941662; -26.131247","HUMAN_OBSERVATION; 2015; 27.984033; -26.079947","HUMAN_OBSERVATION; 2015; 27.973138; -26.086021","HUMAN_OBSERVATION; 2015; 29.686531; -29.328366","HUMAN_OBSERVATION; 2015; 29.667074; -29.386053","HUMAN_OBSERVATION; 2015; 29.326786; -29.60167","HUMAN_OBSERVATION; 2014; 29.5742; -29.56226","HUMAN_OBSERVATION; 2014; 30.84095; -29.64384","HUMAN_OBSERVATION; 2014; 29.21031; -28.948923","HUMAN_OBSERVATION; 2014; 29.397452; -29.054935","HUMAN_OBSERVATION; 2014; 29.397388; -29.054963","HUMAN_OBSERVATION; 2013; 28.656083; -28.52541","HUMAN_OBSERVATION; 2013; 31.15587; -25.792337","HUMAN_OBSERVATION; 2013; 29.399492; -29.62365","HUMAN_OBSERVATION; 2013; 29.52747; -31.60458","HUMAN_OBSERVATION; 2013; 31.106331; -26.134609","HUMAN_OBSERVATION; 2013; 29.12533; -28.56869","HUMAN_OBSERVATION; 2013; 31.087895; -25.79358","HUMAN_OBSERVATION; 2012; 29.16434; -28.545867","HUMAN_OBSERVATION; 2012; 29.201858; -28.967748","HUMAN_OBSERVATION; 2012; 29.5562; -29.7215","HUMAN_OBSERVATION; 2012; 30.622361; -25.14357","HUMAN_OBSERVATION; 2012; 29.385164; -29.057567","PRESERVED_SPECIMEN; 2012; 30.62235; -25.14345","PRESERVED_SPECIMEN; 2012; 31.08337; -25.795","HUMAN_OBSERVATION; 2012; 28.957996; -28.638514","HUMAN_OBSERVATION; 2011; 29.673383; -30.430982","HUMAN_OBSERVATION; 2011; 29.438641; -29.658729","PRESERVED_SPECIMEN; 2009; 30.835278; -29.766111","HUMAN_OBSERVATION; 2009; 28.914964; -28.675303","HUMAN_OBSERVATION; 2008; 28.9463; -28.63476","HUMAN_OBSERVATION; 2008; 30.880767; -25.641897","HUMAN_OBSERVATION; 2008; 29.383815; -29.619174","HUMAN_OBSERVATION; 2008; 30.073831; -25.39859","HUMAN_OBSERVATION; 2007; 30.570175; -25.053648","HUMAN_OBSERVATION; 2007; 30.548723; -25.073289","HUMAN_OBSERVATION; 2007; 29.58407; -28.26315","HUMAN_OBSERVATION; 2007; 29.56486; -28.25806","HUMAN_OBSERVATION; 2006; 31.032227; -26.191623","HUMAN_OBSERVATION; 2006; 30.554157; -25.100225","HUMAN_OBSERVATION; 2005; 29.050978; -28.579387","PRESERVED_SPECIMEN; 2003; 30.625; -25.375","PRESERVED_SPECIMEN; 2003; 30.525278; -25.117778","PRESERVED_SPECIMEN; 2002; 30.5225; -25.287778","HUMAN_OBSERVATION; 2002; 29.309877; -29.598576","HUMAN_OBSERVATION; 1999; 29.406644; -29.05355","PRESERVED_SPECIMEN; 1999; 29.875; -25.125","PRESERVED_SPECIMEN; 1996; 30.125; -25.125","PRESERVED_SPECIMEN; 1996; 29.895833; -23.851944","PRESERVED_SPECIMEN; 1993; 28.445506; -26.596088","PRESERVED_SPECIMEN; 1993; 28.125; -31.125","PRESERVED_SPECIMEN; 1992; 31.125; -25.875","PRESERVED_SPECIMEN; 1991; 30.375; -24.375","PRESERVED_SPECIMEN; 1991; 31.125; -26.125","PRESERVED_SPECIMEN; 1988; 28.625; -30.125","PRESERVED_SPECIMEN; 1988; 28.375; -31.375","PRESERVED_SPECIMEN; 1988; 30.125; -25.375","PRESERVED_SPECIMEN; 1988; 28.625; -28.375","PRESERVED_SPECIMEN; 1987; 31.0872; -25.81111","PRESERVED_SPECIMEN; 1987; 30.183333; -30.933333","PRESERVED_SPECIMEN; 1986; 28.25; -30.75","PRESERVED_SPECIMEN; 1986; 30.625; -25.125","PRESERVED_SPECIMEN; 1985; 30.375; -25.125","PRESERVED_SPECIMEN; 1982; 27.875; -26.125","PRESERVED_SPECIMEN; 1982; 29.383333; -29.616667","PRESERVED_SPECIMEN; 1982; 29.375; -29.625","PRESERVED_SPECIMEN; 1982; 29.1344; -28.9233","PRESERVED_SPECIMEN; 1981; 30.625; -24.875","PRESERVED_SPECIMEN; 1981; 30.125; -30.875","PRESERVED_SPECIMEN; 1979; 30.375; -30.625","PRESERVED_SPECIMEN; 1978; 29.625; -30.625","PRESERVED_SPECIMEN; 1978; 31.08639; -25.79912","PRESERVED_SPECIMEN; 1978; 30.875; -24.625","PRESERVED_SPECIMEN; 1978; 29.7667; -29.7167","PRESERVED_SPECIMEN; 1978; 30.875; -29.875","PRESERVED_SPECIMEN; 1978; 29.125; -28.875","PRESERVED_SPECIMEN; 1978; 28.375; -32.375","PRESERVED_SPECIMEN; 1978; 30.770278; -25.830833","PRESERVED_SPECIMEN; 1977; 29.125; -28.625","PRESERVED_SPECIMEN; 1976; 31.125; -29.625","PRESERVED_SPECIMEN; 1976; 30.875; -25.875","PRESERVED_SPECIMEN; 1976; 30.875; -24.875","PRESERVED_SPECIMEN; 1976; 30.875; -28.875","PRESERVED_SPECIMEN; 1975; 30.83; -25.83","PRESERVED_SPECIMEN; 1975; 29.875; -23.875","PRESERVED_SPECIMEN; 1975; 30.8375; -25.828611","PRESERVED_SPECIMEN; 1975; 30.775833; -25.805833","PRESERVED_SPECIMEN; 1975; 27.375; -31.375","PRESERVED_SPECIMEN; 1975; 27.625; -31.625","PRESERVED_SPECIMEN; 1974; 29.625; -24.125","PRESERVED_SPECIMEN; 1974; 29.875; -24.125","PRESERVED_SPECIMEN; 1973; 29.125; -29.875","PRESERVED_SPECIMEN; 1973; 27.875; -31.375","PRESERVED_SPECIMEN; 1972; 30.86943; -24.5422","PRESERVED_SPECIMEN; 1972; 28.375; -24.125","PRESERVED_SPECIMEN; 1972; 29.625; -27.875","PRESERVED_SPECIMEN; 1971; 27.7549; -25.9054","PRESERVED_SPECIMEN; 1971; 30.125; -23.875","PRESERVED_SPECIMEN; 1971; 30.625; -25.625","PRESERVED_SPECIMEN; 1971; 30.776667; -25.808333","PRESERVED_SPECIMEN; 1971; 30.67372; -25.47717","PRESERVED_SPECIMEN; 1971; 28.375; -26.625","PRESERVED_SPECIMEN; 1969; 30.125; -30.625","PRESERVED_SPECIMEN; 1969; 29.375; -28.375","PRESERVED_SPECIMEN; 1968; 30.625; -30.375","PRESERVED_SPECIMEN; 1968; 29.125; -28.375","PRESERVED_SPECIMEN; 1968; 30.625; -29.125","PRESERVED_SPECIMEN; 1968; 29.375; -30.875","PRESERVED_SPECIMEN; 1968; 30.816389; -25.766111","PRESERVED_SPECIMEN; 1967; 29.375; -29.125","PRESERVED_SPECIMEN; 1966; 30.125; -24.125","PRESERVED_SPECIMEN; 1966; 29.125; -24.125","PRESERVED_SPECIMEN; 1966; 29.375; -22.875","PRESERVED_SPECIMEN; 1965; 29.125; -30.625","PRESERVED_SPECIMEN; 1965; 30.875; -27.875","PRESERVED_SPECIMEN; 1964; 27.875; -31.625","PRESERVED_SPECIMEN; 1964; 28.875; -30.375","PRESERVED_SPECIMEN; 1964; 29.375; -29.375","PRESERVED_SPECIMEN; 1964; 30.125; -29.375","PRESERVED_SPECIMEN; 1964; 29.6245; -23.5973","PRESERVED_SPECIMEN; 1963; 29.1643; -28.1198","PRESERVED_SPECIMEN; 1962; 29.875; -30.875","PRESERVED_SPECIMEN; 1961; 29.125; -23.125","PRESERVED_SPECIMEN; 1961; 28.875; -23.125","PRESERVED_SPECIMEN; 1961; 29.375; -23.875","PRESERVED_SPECIMEN; 1960; 30.375; -27.375","PRESERVED_SPECIMEN; 1960; 29.875; -22.875","PRESERVED_SPECIMEN; 1959; 27.625; -24.375","PRESERVED_SPECIMEN; 1959; 31.875; -28.125","PRESERVED_SPECIMEN; 1959; 32.125; -28.125","PRESERVED_SPECIMEN; 1958; 31.033333; -26.233333","PRESERVED_SPECIMEN; 1957; 29.875; -29.125","PRESERVED_SPECIMEN; 1957; 29.625; -29.375","PRESERVED_SPECIMEN; 1956; 31.375; -27.875","PRESERVED_SPECIMEN; 1956; 30.875; -25.625","PRESERVED_SPECIMEN; 1956; 29.625; -31.375","PRESERVED_SPECIMEN; 1956; 28.375; -24.375","PRESERVED_SPECIMEN; 1955; 31.125; -26.375","PRESERVED_SPECIMEN; 1955; 30.4833; -27.2167","PRESERVED_SPECIMEN; 1954; 29.375; -28.625","PRESERVED_SPECIMEN; 1953; 31.375; -25.625","PRESERVED_SPECIMEN; 1951; 28.125; -25.625","PRESERVED_SPECIMEN; 1949; 29.5; -29.5","PRESERVED_SPECIMEN; 1949; 28.125; -26.125","PRESERVED_SPECIMEN; 1949; 27.125; -24.625","PRESERVED_SPECIMEN; 1948; 28.625; -31.375","PRESERVED_SPECIMEN; 1947; 29.375; -25.125","PRESERVED_SPECIMEN; 1945; 29.875; -23.125","PRESERVED_SPECIMEN; 1944; 28.625; -28.125","PRESERVED_SPECIMEN; 1939; 29.9963; -23.83363","PRESERVED_SPECIMEN; 1939; 31.125; -28.625","PRESERVED_SPECIMEN; 1939; 29.625; -29.125","PRESERVED_SPECIMEN; 1938; 27.625; -26.125","PRESERVED_SPECIMEN; 1938; 28.875; -28.625","PRESERVED_SPECIMEN; 1938; 27.7678; -25.7908","PRESERVED_SPECIMEN; 1937; 30.23333; -30.7","PRESERVED_SPECIMEN; 1936; 27.6156; -25.8814","PRESERVED_SPECIMEN; 1936; 30.125; -24.625","PRESERVED_SPECIMEN; 1935; 30.125; -22.875","PRESERVED_SPECIMEN; 1935; 30.375; -27.875","PRESERVED_SPECIMEN; 1935; 31.375; -25.875","PRESERVED_SPECIMEN; 1935; 29.375; -25.875","PRESERVED_SPECIMEN; 1933; 28.875; -31.375","PRESERVED_SPECIMEN; 1933; 30.65; -25.08278","PRESERVED_SPECIMEN; 1933; 30.62395; -25.04953","PRESERVED_SPECIMEN; 1931; 31.05306; -25.78611","PRESERVED_SPECIMEN; 1930; 29.375; -30.375","PRESERVED_SPECIMEN; 1926; 30.625; -29.625","PRESERVED_SPECIMEN; 1924; 28.375; -24.875","PRESERVED_SPECIMEN; 1923; 30.125; -28.875","PRESERVED_SPECIMEN; 1920; 29.875; -28.625","PRESERVED_SPECIMEN; 1920; 28.875; -28.875","PRESERVED_SPECIMEN; 1915; 28.9094; -28.6864","PRESERVED_SPECIMEN; 1915; 29.875; -26.625","PRESERVED_SPECIMEN; 1912; 28.5798; -27.29127","PRESERVED_SPECIMEN; 1912; 29.04511; -30.4972","PRESERVED_SPECIMEN; 1910; 30.42712; -30.26118","PRESERVED_SPECIMEN; 1910; 30.375; -30.375","PRESERVED_SPECIMEN; 1910; 25.875; -33.625","PRESERVED_SPECIMEN; 1905; 29.375; -24.125","PRESERVED_SPECIMEN; 1904; 28.375; -30.875","PRESERVED_SPECIMEN; 1900; 30.875; -29.625"],null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]}],"limits":{"lat":[-33.625,-22.875],"lng":[25.875,32.125]}},"evals":[],"jsHooks":[]}</script>
+</div>
+<div id="making-a-good-map" class="section level4">
+<h4>Making a ‘good’ map</h4>
+<p>You should notice when you zoom in that many points are too regularly
+spaced to be exact locations of species sightings; rather, such points
+are likely to be centroids of (relatively large) grid cells on which
+particular surveys were based. This is not necessarily a problem, but
+remember to adjust the spatial resolution of your analysis accordingly!
+In our case, we want to now remove these observations from our dataset.
+An easy way to do this is to filter by date. We will only use dates from
+after 1980.</p>
+<pre class="r"><code>pr_WGS_84 %&gt;% filter(year &gt; 1980) -&gt; pr_1980</code></pre>
+<p>To make an appealing map, it is useful to separate the regions of
+interest from those that form part of the background. In our case, South
+Africa, Lesotho and eSwatini (which is still labeled as Swaziland in
+many online databases) are our regions of interest.</p>
+<pre class="r"><code># let&#39;s separate the countries with points from those without
+sa_les_esw &lt;- sern_a %&gt;% filter(admin %in% c(&#39;South Africa&#39;, &#39;Lesotho&#39;, &#39;Swaziland&#39;))
+other_sern_a &lt;- sern_a %&gt;% filter(!admin %in% c(&#39;South Africa&#39;, &#39;Lesotho&#39;, &#39;Swaziland&#39;)) # use a &#39;negative&#39; filter to include all other countries</code></pre>
+<p>Let’s now prepare our ‘finished’ plot. We can now plot our regions of
+interest in one colour and our background regions as a different colour.
+We can change the transparancy and size of our species locality and we
+focus in the limits of our map for the x and y axes:</p>
+<pre class="r"><code>ggplot() +
+  geom_sf(data = other_sern_a, fill = &#39;gray90&#39;, lwd = 0.3) + # change the fill colour
+  geom_sf(data = sa_les_esw, fill = &#39;white&#39;, lwd = 0.3) + # change the fill colour
+  geom_sf(data = pr_1980, alpha = 0.6, size = 2) + # change the transparency and size of the points  
+  scale_x_continuous(limits = c(16, 33), breaks = seq(16, 32, 4)) + # add in breaks for the labels using sequence function
+  scale_y_continuous(limits = c(-35, -22), breaks = seq(-34, -22, 4)) + # add in breaks for the labels using sequence function
+  xlab(&#39;Longitude&#39;) + ylab(&#39;Latitude&#39;) </code></pre>
+<p><img src="Making_a_map_files/figure-html/prepare%20final%20plot%201-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Next, we can add in the a scale bar and north arrow using the
+<code>ggspatial</code> package. We add in text using the
+<code>annotate</code> function and lastly, we change some elements of
+the overall theme and background elements, such as the ocean colour and
+graticule (or grid) lines to be more visually pleasing. Save as this as
+another base plot for later use.</p>
+<pre class="r"><code>base_plot2 &lt;- ggplot() +
+  geom_sf(data = other_sern_a, fill = &#39;gray90&#39;, lwd = 0.3) + # change the fill colour
+  geom_sf(data = sa_les_esw, fill = &#39;white&#39;, lwd = 0.3) + # change the fill colour
+  geom_sf(data = pr_1980, alpha = 0.6, size = 2) + # change the transparency and size of the points  
+  scale_x_continuous(limits = c(16, 33), breaks = seq(16, 32, 4)) + # add in breaks for the labels using sequence function
+  scale_y_continuous(limits = c(-35, -22), breaks = seq(-34, -22, 4)) + # add in breaks for the labels using sequence function
+  xlab(&#39;Longitude&#39;) + ylab(&#39;Latitude&#39;) + # change the x and y axes labels
+  
+  
+  annotation_scale(location = &#39;br&#39;, width_hint = 0.1, style = &#39;ticks&#39;, tick_height = 0) + # add in a scale bar
+  annotation_north_arrow(location = &#39;br&#39;, pad_y = unit(1, &#39;cm&#39;), style = north_arrow_minimal()) + # add in a north arrow, and change around the placement and arrow style
+  annotate(geom = &#39;text&#39;, x = 23.5, y = -30.5, label = &#39;SOUTH AFRICA&#39;, colour = &#39;black&#39;, size = 4) + # add in text for SA
+  annotate(geom = &#39;text&#39;, x = 28.25, y = -29.5, label = &#39;LESOTHO&#39;, colour = &#39;black&#39;, size = 2.6) + # add in text for Lesotho
+  annotate(geom = &#39;text&#39;, x = 31.45, y = -26.6, label = &#39;ESWATINI&#39;, colour = &#39;black&#39;, size = 2.6) + # add in text for eSwatini
+  theme_bw() + # edit the overall theme (there are several other options)
+  theme(panel.grid = element_line(color = gray(.5), linetype = &#39;dashed&#39;, size = 0.3),
+        panel.background = element_rect(fill = &#39;#E8F6FC&#39;)) # lastly, change the grid line parameters and change the background (ocean) colour
+
+base_plot2</code></pre>
+<pre><code>## Scale on map varies by more than 10%, scale bar may be inaccurate</code></pre>
+<p><img src="Making_a_map_files/figure-html/prepare%20final%20plot%202-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="saving-the-map" class="section level4">
+<h4>Saving the map</h4>
+<p>Within <code>ggplot2</code>, we can use the <code>ggsave</code>
+function to easily save figures to different formats. PDF and PNG
+formats are fundamentally different, in that PDFs are vector based while
+PNGs (or JPEGs) are pixel based. This means you do not need to specify a
+resolution or DPI (Dots Per Inch) for PDFs, but for pixel based outputs,
+you should. Save the outputs to your output folder, specifying the file
+type and the width and height of your plot.</p>
+<pre class="r"><code># first as a pdf, specify the output directory, the object and the width &amp; height
+ggsave(&#39;output/figs/making_a_map/map.pdf&#39;, base_plot2, width = 6.68, height = 5.76)
+# next as a png, specify the same parameters, but now as it is a pixel-based file type, specify the resolution
+ggsave(&#39;output/figs/making_a_map/map.png&#39;, base_plot2, width = 6.68, height = 5.76, dpi = 300)</code></pre>
+</div>
+<div id="inset-map" class="section level4">
+<h4>Inset map</h4>
+<p>This is a reasonable place to end, however, if your map is of a small
+area (luckily not our case), it can often be useful to add an inset map
+to show where your site/study species is relative to other known
+features. For this, we can produce an inset map. In our case we will
+produce an inset map showing where southern Africa is relative to the
+rest of Africa, with a box showing our plot extent.</p>
+<pre class="r"><code># Let&#39;s create a box that covers our map to show where our site is.
+# We will use the limits of the previous map 
+
+# A rectangle requires 5 points to make a complete polygon, so we will create a list with 2 columns (lon &amp; lat) and 5 rows (5 points)
+pol_lon = c(16, 33)
+pol_lat = c(-35, -22)
+coord_df = data.frame(pol_lon, pol_lat)
+
+# Now make the list
+coord_list &lt;- list(
+  cbind(
+    coord_df$pol_lon[c(1,2,2,1,1)], 
+    coord_df$pol_lat[c(1,1,2,2,1)])
+)
+
+# Convert the points to an sf polygon
+base_plot2_bbox &lt;- st_polygon(coord_list, dim = &#39;XY&#39;)
+# Add a CRS that matches our previous systems
+map_bbox &lt;- st_sfc(base_plot2_bbox, crs = 4326)
+
+# Plot to see if this is working
+ggplot() +
+  geom_sf(data = world) +
+  geom_sf(data = map_bbox, fill = NA, col = &#39;red&#39;) # use fill = NA to make the middle of the polygon transparent</code></pre>
+<p><img src="Making_a_map_files/figure-html/inset%20map-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>We have identified where our site is relative to other features. Now
+we can produce a ‘final’ inset map:</p>
+<pre class="r"><code>#### Let&#39;s now zoom in our inset map and try to match some of the other features of our basemap
+# Download just Africa
+africa &lt;- ne_countries(continent = &#39;africa&#39;, returnclass = &#39;sf&#39;)
+other_africa &lt;- africa %&gt;% filter(!admin %in% c(&#39;South Africa&#39;, &#39;Lesotho&#39;, &#39;Swaziland&#39;))
+
+# Create the inset map
+inset_map &lt;- ggplot() +
+  geom_sf(data = other_africa, fill = &#39;gray90&#39;, lwd = 0.2) +
+  geom_sf(data = sa_les_esw, fill = &#39;white&#39;, lwd = 0.2) +
+  geom_sf(data = map_bbox, fill = NA, col = &#39;black&#39;, lwd = 0.8) +
+  scale_x_continuous(limits = c(-20, 50)) +
+  scale_y_continuous(limits = c(40, -35)) +
+  theme_void() + # this theme removes ALL axes, grids and labels 
+  theme(panel.border = element_rect(colour = &#39;black&#39;, fill = NA),
+        panel.background = element_rect(fill = &#39;#E8F6FC&#39;)) # we then want to add a border and the background colour back in
+
+inset_map</code></pre>
+<p><img src="Making_a_map_files/figure-html/inset%20map%20continued-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>To combine our base map and inset map together, we can use the
+<code>patchwork</code> package. The function
+<code>inset_element()</code> requires that we specify where on the base
+map our inset map will fall.</p>
+<pre class="r"><code>combined_maps &lt;- base_plot2 + inset_element(inset_map, left = 0.025, bottom = 0.6, right = 0.4, top = 0.975) 
+# we need to chose the positioning of the inset, assuming the plot values go from 0 to 1 for each axis.
+combined_maps</code></pre>
+<pre><code>## Scale on map varies by more than 10%, scale bar may be inaccurate</code></pre>
+<p><img src="Making_a_map_files/figure-html/patchwork%20combo-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Then we can save our final combined map:</p>
+<pre class="r"><code># Save the output
+ggsave(&#39;output/figs/making_a_map/combined_maps.png&#39;, combined_maps, width = 6.68, height = 5.76, dpi = 300)  </code></pre>
+<p>Lastly, we want to save our filtered and cleaned species locality
+data as a shapefile to use in later practicals:</p>
+<pre class="r"><code># write the P. roupelliae locations to a shapefile
+write_sf(pr_1980, &#39;output/files/making_a_map/p_roup_gbif.shp&#39;)</code></pre>
+</div>
+<div id="extra-resources-for-map-making" class="section level4">
+<h4>Extra resources for map making</h4>
+<p>The Geocomputation with R book has lots of excellent tutorials on the
+theory and application of spatial data in R. For a start <a
+href="https://geocompr.robinlovelace.net/adv-map.html">here</a> is a
+full tutorial showing many different approaches to making maps in R.</p>
+</div>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3,h4",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

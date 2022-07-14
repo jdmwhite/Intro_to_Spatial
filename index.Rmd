@@ -49,9 +49,7 @@ Wait for the project to deploy (this may take a couple of minutes). Once it has 
 See the [Additional Resources](https://jdmwhite.github.io/R_Workshop/Resources.html) page for lots of helpful links related to R.
 
 ```{r out.width='20%', echo = FALSE}
-knitr::include_graphics("images/GSN_logo.png")
+knitr::include_graphics("images/NRF_SAEON_GSN.png")
 ```
 
-```{r out.width='20%', echo = FALSE}
-knitr::include_graphics("images/NRF_SAEON.png")
-```
+This course was hosted and organised by the SAEON Graduate Student Network.

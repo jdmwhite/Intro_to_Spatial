@@ -12,11 +12,11 @@ output:
 
 ### Access all lecture slides
 
-* [Slides](https://drive.google.com/drive/folders/1tj-U-fIvpd65yP8J6OoC0TrBGkAveaLa?usp=sharing)
+* [Slides]()
 
 ### Where to ask questions?
 * The best place to find answers to your R problems is the internet. However, finding the most appropriate answer quickly is also a skill and will improve as your understanding of R grows. 
-* So start with Google. Craft your questions to only have a few key words that may help refine your search. For example: "select columns in R" or "select columns in R dplyr" if you want something `tidyverse` related.
+* So start with Google. Craft your questions to only have a few key words that may help refine your search. For example: "how to plot a raster" or "how to plot a raster R terra" if you want something `terra` related.
 * Many of your Google queries may take you to [Stackoverflow](https://stackoverflow.com). This is a community full of R users who are asking and answering all things R related. There is a very good change that your query has already been answered here.
 
 ### Additional R resources
