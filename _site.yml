@@ -1,6 +1,6 @@
-name: "Intro to Spatial Data in R"
+name: ""
 navbar:
-  title: "Intro to Spatial Data in R"
+  title: ""
   left:
     - text: "Home"
       href: index.html
@@ -10,7 +10,7 @@ navbar:
       href: NDVI_time_series.html
     - text: 'Land cover change'
       href: Land_cover_change.html
-    - text: 'Species Distribution Models'
+    - text: 'SDMs'
       href: sdm.html
     - text: 'Extras'
       href: extras.html
