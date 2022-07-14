@@ -13,7 +13,7 @@ navbar:
     - text: 'SDMs'
       href: SDMs.html
     - text: 'Extras'
-      href: extras.html
+      href: Extras.html
     - text: "Additional Resources"
       href: Resources.html
 output_dir: "docs"
