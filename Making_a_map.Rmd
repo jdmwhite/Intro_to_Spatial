@@ -38,13 +38,13 @@ To create your own maps, it is important to understand some of the core types of
 knitr::include_graphics("images/sf-classes.png")
 ```
 
-There are several different R packages for using vector data, however in this practical, we will focus on the `sf` package for handling and displaying vector data. `sf` is useful for handling spatial data as the vector objects can be treated like data frames in most functions and in can be combined with the pipe operator `%>%` and works well with the `tidyverse` group of R packages. This includes integration into the `ggplot2` package, which will help us with making maps later.
+There are several different R packages for using vector data, however in this tutorial, we will focus on the `sf` package for handling and displaying vector data. `sf` is useful for handling spatial data as the vector objects can be treated like data frames in most functions and in can be combined with the pipe operator `%>%` and works well with the `tidyverse` group of R packages. This includes integration into the `ggplot2` package, which will help us with making maps later.
 
 ### Raster data
 
 **Rasters** represent data in a grid of 'cells', which are typically referred to as 'pixels'. Generally, these cells/pixels have a constant size or spatial resolution (e.g. mm/m/km). **Rasters** are formatted as a matrix, with rows and columns. Each **raster** will also come with a 'header' or metadata, which includes information on the coordinate reference system (which we discuss later), an extent and an origin.
 
-The values inside each raster cell can represent either *continuous* or *categorical* data. Continuous data may include values such as temperature, elevation or spectral data (see Practical 2). Categorical data may include land cover types (see Practical 4) or discrete categories of soil classes.
+The values inside each raster cell can represent either *continuous* or *categorical* data. Continuous data may include values such as temperature, elevation or spectral data. Categorical data may include land cover types or discrete categories of soil classes.
 
 ```{r raster types, echo=FALSE, fig.align="center", out.width='60%', fig.cap='Different types of raster data. Credit: Lovelace, Nowosad, Muenchow 2022: Geocomputation with R. Chapter 2'}
 knitr::include_graphics("images/raster-intro-plot2-1.png")
@@ -75,7 +75,7 @@ To find a list of all available projections use this function: `sf_proj_info(typ
 
 ### Tutorial
 
-That covers the basics. For a fuller explanation of these basics, please visit the [Geocomputation with R](https://geocompr.robinlovelace.net/spatial-class.html#spatial-class) notebook. In this practical, you will become more familiar with **vector** based data for making a map of species localities. In the following practicals, you will get some more experience in handling **raster** based data. Let's get started with coding. The first step in our coding workflow is to install and load the required packages:
+That covers the basics. For a fuller explanation of these basics, please visit the [Geocomputation with R](https://geocompr.robinlovelace.net/spatial-class.html#spatial-class) notebook. In this tutorial, you will become more familiar with **vector** based data for making a map of species localities. In the following tutorials, you will get some more experience in handling **raster** based data. Let's get started with coding. The first step in our coding workflow is to install and load the required packages:
 
 ```{r install and load packages, message = FALSE, warning=FALSE}
 # install.packages('rgbif')
@@ -105,7 +105,7 @@ library(patchwork)
 
 We will download the data from the Global Biodiversity Information Facility ([GBIF](https://www.gbif.org/)). This is a massive online database of museum, herbarium, large database and in person observations. It has recently been integrated with [iNaturalist](https://www.inaturalist.org/) (a citizen science based observation platform), meaning it has both historical and contemporary observations.
 
-We will be working on *Protea roupelliae*. A summer rainfall *Protea* species, which occurs extensively across eastern South Africa, Lesotho and eSwatini. There are two subspecies, but we will treat these as the same thing in this practical
+We will be working on *Protea roupelliae*. A summer rainfall *Protea* species, which occurs extensively across eastern South Africa, Lesotho and eSwatini. There are two subspecies, but we will treat these as the same thing in this tutorial.
 
 ```{r Download species data from GBIF}
 # Name your species
@@ -356,7 +356,7 @@ Then we can save our final combined map:
 ggsave('output/figs/making_a_map/combined_maps.png', combined_maps, width = 6.68, height = 5.76, dpi = 300)  
 ```
 
-Lastly, we want to save our filtered and cleaned species locality data as a shapefile to use in later practicals:
+Lastly, we want to save our filtered and cleaned species locality data as a shapefile to use in our SDMs later:
 
 ```{r export the location points, eval=FALSE}
 # write the P. roupelliae locations to a shapefile
