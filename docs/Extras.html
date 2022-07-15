@@ -337,7 +337,7 @@ div.tocify {
   <a href="SDMs.html">SDMs</a>
 </li>
 <li>
-  <a href="extras.html">Extras</a>
+  <a href="Extras.html">Extras</a>
 </li>
 <li>
   <a href="Resources.html">Additional Resources</a>
@@ -359,18 +359,461 @@ div.tocify {
 </div>
 
 
-<div id="learning-objectives" class="section level3">
-<h3>Learning objectives</h3>
-</div>
 <div id="introduction" class="section level3">
 <h3>Introduction</h3>
 </div>
 <div id="tutorial-1-extracting-raster-data-by-vectors"
 class="section level3">
 <h3>Tutorial 1: extracting raster data by vectors</h3>
+<div id="learning-objectives" class="section level4">
+<h4>Learning objectives</h4>
+<ol style="list-style-type: decimal">
+<li>To extract environmental data using points or polygons</li>
+</ol>
+<pre class="r"><code>#### Libraries
+library(terra)</code></pre>
+<pre><code>## terra 1.5.21</code></pre>
+<pre class="r"><code>library(sf)</code></pre>
+<pre><code>## Linking to GEOS 3.10.2, GDAL 3.4.2, PROJ 8.2.1; sf_use_s2() is TRUE</code></pre>
+<pre class="r"><code>library(tidyverse)</code></pre>
+<pre><code>## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──</code></pre>
+<pre><code>## ✔ ggplot2 3.3.6     ✔ purrr   0.3.4
+## ✔ tibble  3.1.7     ✔ dplyr   1.0.9
+## ✔ tidyr   1.2.0     ✔ stringr 1.4.0
+## ✔ readr   2.1.2     ✔ forcats 0.5.1</code></pre>
+<pre><code>## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+## ✖ ggplot2::arrow() masks terra::arrow()
+## ✖ tidyr::extract() masks terra::extract()
+## ✖ dplyr::filter()  masks stats::filter()
+## ✖ dplyr::lag()     masks stats::lag()
+## ✖ dplyr::src()     masks terra::src()</code></pre>
+<pre class="r"><code>library(rnaturalearth)</code></pre>
+</div>
+<div id="load-in-environmental-data" class="section level4">
+<h4>Load in environmental data</h4>
+<pre class="r"><code># Load in worldclim data
+worldclim &lt;- rast(&#39;data/sdm/worldclim.tif&#39;)
+# Subset the data to the first 6 variables just to make the example run faster
+wc &lt;- worldclim[[1:6]]
+# check the variables
+names(wc)</code></pre>
+<pre><code>## [1] &quot;bio1&quot; &quot;bio2&quot; &quot;bio3&quot; &quot;bio4&quot; &quot;bio5&quot; &quot;bio6&quot;</code></pre>
+</div>
+<div id="extract-using-polygon-data" class="section level4">
+<h4>Extract using polygon data</h4>
+<pre class="r"><code># load in a country borders for Africa from online
+# you could load in your own shapefile here
+afr &lt;- vect(ne_countries(continent = &#39;Africa&#39;, returnclass = &#39;sf&#39;))
+head(afr)</code></pre>
+<pre><code>##   scalerank      featurecla labelrank               sovereignt sov_a3 adm0_dif
+## 1         1 Admin-0 country         3                   Angola    AGO        0
+## 2         1 Admin-0 country         6                  Burundi    BDI        0
+## 3         1 Admin-0 country         5                    Benin    BEN        0
+## 4         1 Admin-0 country         3             Burkina Faso    BFA        0
+## 5         1 Admin-0 country         4                 Botswana    BWA        0
+## 6         1 Admin-0 country         4 Central African Republic    CAF        0
+##   level              type                    admin adm0_a3 geou_dif
+## 1     2 Sovereign country                   Angola     AGO        0
+## 2     2 Sovereign country                  Burundi     BDI        0
+## 3     2 Sovereign country                    Benin     BEN        0
+## 4     2 Sovereign country             Burkina Faso     BFA        0
+## 5     2 Sovereign country                 Botswana     BWA        0
+## 6     2 Sovereign country Central African Republic     CAF        0
+##                    geounit gu_a3 su_dif                  subunit su_a3 brk_diff
+## 1                   Angola   AGO      0                   Angola   AGO        0
+## 2                  Burundi   BDI      0                  Burundi   BDI        0
+## 3                    Benin   BEN      0                    Benin   BEN        0
+## 4             Burkina Faso   BFA      0             Burkina Faso   BFA        0
+## 5                 Botswana   BWA      0                 Botswana   BWA        0
+## 6 Central African Republic   CAF      0 Central African Republic   CAF        0
+##                   name                name_long brk_a3             brk_name
+## 1               Angola                   Angola    AGO               Angola
+## 2              Burundi                  Burundi    BDI              Burundi
+## 3                Benin                    Benin    BEN                Benin
+## 4         Burkina Faso             Burkina Faso    BFA         Burkina Faso
+## 5             Botswana                 Botswana    BWA             Botswana
+## 6 Central African Rep. Central African Republic    CAF Central African Rep.
+##   brk_group abbrev postal                   formal_en formal_fr note_adm0
+## 1      &lt;NA&gt;   Ang.     AO People&#39;s Republic of Angola      &lt;NA&gt;      &lt;NA&gt;
+## 2      &lt;NA&gt;   Bur.     BI         Republic of Burundi      &lt;NA&gt;      &lt;NA&gt;
+## 3      &lt;NA&gt;  Benin     BJ           Republic of Benin      &lt;NA&gt;      &lt;NA&gt;
+## 4      &lt;NA&gt;   B.F.     BF                Burkina Faso      &lt;NA&gt;      &lt;NA&gt;
+## 5      &lt;NA&gt;   Bwa.     BW        Republic of Botswana      &lt;NA&gt;      &lt;NA&gt;
+## 6      &lt;NA&gt; C.A.R.     CF    Central African Republic      &lt;NA&gt;      &lt;NA&gt;
+##   note_brk                name_sort name_alt mapcolor7 mapcolor8 mapcolor9
+## 1     &lt;NA&gt;                   Angola     &lt;NA&gt;         3         2         6
+## 2     &lt;NA&gt;                  Burundi     &lt;NA&gt;         2         2         5
+## 3     &lt;NA&gt;                    Benin     &lt;NA&gt;         1         2         2
+## 4     &lt;NA&gt;             Burkina Faso     &lt;NA&gt;         2         1         5
+## 5     &lt;NA&gt;                 Botswana     &lt;NA&gt;         6         5         7
+## 6     &lt;NA&gt; Central African Republic     &lt;NA&gt;         5         6         6
+##   mapcolor13  pop_est gdp_md_est pop_year lastcensus gdp_year
+## 1          1 12799293     110300       NA       1970       NA
+## 2          8  8988091       3102       NA       2008       NA
+## 3         12  8791832      12830       NA       2002       NA
+## 4         11 15746232      17820       NA       2006       NA
+## 5          3  1990876      27060       NA       2011       NA
+## 6          9  4511488       3198       NA       2003       NA
+##                     economy             income_grp wikipedia fips_10 iso_a2
+## 1 7. Least developed region 3. Upper middle income        NA    &lt;NA&gt;     AO
+## 2 7. Least developed region          5. Low income        NA    &lt;NA&gt;     BI
+## 3 7. Least developed region          5. Low income        NA    &lt;NA&gt;     BJ
+## 4 7. Least developed region          5. Low income        NA    &lt;NA&gt;     BF
+## 5      6. Developing region 3. Upper middle income        NA    &lt;NA&gt;     BW
+## 6 7. Least developed region          5. Low income        NA    &lt;NA&gt;     CF
+##   iso_a3 iso_n3 un_a3 wb_a2 wb_a3 woe_id adm0_a3_is adm0_a3_us adm0_a3_un
+## 1    AGO    024   024    AO   AGO     NA        AGO        AGO         NA
+## 2    BDI    108   108    BI   BDI     NA        BDI        BDI         NA
+## 3    BEN    204   204    BJ   BEN     NA        BEN        BEN         NA
+## 4    BFA    854   854    BF   BFA     NA        BFA        BFA         NA
+## 5    BWA    072   072    BW   BWA     NA        BWA        BWA         NA
+## 6    CAF    140   140    CF   CAF     NA        CAF        CAF         NA
+##   adm0_a3_wb continent region_un       subregion          region_wb name_len
+## 1         NA    Africa    Africa   Middle Africa Sub-Saharan Africa        6
+## 2         NA    Africa    Africa  Eastern Africa Sub-Saharan Africa        7
+## 3         NA    Africa    Africa  Western Africa Sub-Saharan Africa        5
+## 4         NA    Africa    Africa  Western Africa Sub-Saharan Africa       12
+## 5         NA    Africa    Africa Southern Africa Sub-Saharan Africa        8
+## 6         NA    Africa    Africa   Middle Africa Sub-Saharan Africa       20
+##   long_len abbrev_len tiny homepart
+## 1        6          4   NA        1
+## 2        7          4   NA        1
+## 3        5          5   NA        1
+## 4       12          4   NA        1
+## 5        8          4   NA        1
+## 6       24          6   NA        1</code></pre>
+<pre class="r"><code># there are lots of variables, let&#39;s keep only the country name</code></pre>
+<pre class="r"><code>afr &lt;- afr[,&#39;name&#39;]
+plot(afr)</code></pre>
+<p><img src="Extras_files/figure-html/plot%20africa-1.png" width="672" /></p>
+<pre class="r"><code># Check projections and reproject if needed
+crs(afr) == crs(wc)</code></pre>
+<pre><code>## [1] FALSE</code></pre>
+<pre class="r"><code>afr_prj &lt;- project(afr, wc)
+crs(afr_prj) == crs(wc)</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<pre class="r"><code># Crop &amp; mask the worldclim layer to the Africa layer
+wc_mask &lt;- mask(crop(wc, afr_prj), afr_prj)
+plot(wc_mask)</code></pre>
+<p><img src="Extras_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+<pre class="r"><code># Create a custom function to summarise the environmental raster data for each country
+my_summary &lt;- function(x) c(mean = mean(x, na.rm = T), min = min(x, na.rm=T), max = max(x, na.rm=T))</code></pre>
+<pre class="r"><code># Use terra::extract() to get multiple summary values
+poly_ext &lt;- terra::extract(wc_mask, afr_prj, fun = my_summary)
+head(poly_ext)</code></pre>
+<pre><code>##   ID bio1.mean bio1.min bio1.max bio2.mean bio2.min bio2.max bio3.mean bio3.min
+## 1  1  216.2583      156      278  138.0433       57      181  64.26773       45
+## 2  2  197.4545      145      252  112.8864       98      128  75.64286       67
+## 3  3  271.9550      254      290  122.8809       60      135  66.16558       57
+## 4  4  280.7006      259      296  134.7982      114      153  60.65496       56
+## 5  5  208.3562      181      229  162.6505      136      187  55.61516       52
+## 6  6  248.9161      219      273  134.7801      105      184  68.16462       60
+##   bio3.max bio4.mean bio4.min bio4.max bio5.mean bio5.min bio5.max bio6.mean
+## 1       78 1854.9078      304     3473  310.3173      236      353  95.92559
+## 2       83  522.9026      260      986  271.8604      208      323 123.16234
+## 3       74 1680.9477     1072     2492  370.7444      316      402 184.51416
+## 4       66 2212.0712     1415     3382  388.2218      357      413 167.03235
+## 5       59 4293.2937     3157     5824  332.7458      295      358  42.63357
+## 6       81 1107.1877      490     2413  346.8247      302      397 148.28986
+##   bio6.min bio6.max
+## 1       39      203
+## 2       72      186
+## 3      157      230
+## 4      137      198
+## 5        6       78
+## 6       98      187</code></pre>
+<pre class="r"><code># Bind the result back on to the polygons
+afr_ext &lt;- cbind(afr_prj, poly_ext)</code></pre>
+<pre class="r"><code># Convert the data to an sf object for plotting
+afr_ext_sf &lt;- afr_ext %&gt;% st_as_sf()
+
+# Plot
+ggplot() +
+  geom_sf(data = afr_ext_sf, aes(fill = bio1.mean/10)) +
+  scale_fill_gradientn(colours = c(&#39;white&#39;, &#39;red&#39;),
+                       name = &#39;Mean ann. temp.&#39;) +
+  theme_void()</code></pre>
+<p><img src="Extras_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+</div>
+<div id="extract-using-point-data" class="section level4">
+<h4>Extract using point data</h4>
+<pre class="r"><code># Create 1000 random points over Africa
+rand_pts &lt;- terra::spatSample(x = afr, size = 1000, method = &quot;random&quot;)
+plot(afr)
+points(rand_pts, cex = 0.5, col = &#39;red&#39;)</code></pre>
+<p><img src="Extras_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<pre class="r"><code># Check projection
+crs(rand_pts) == crs(wc)</code></pre>
+<pre><code>## [1] FALSE</code></pre>
+<pre class="r"><code>rand_pts &lt;- project(rand_pts, wc)
+crs(rand_pts) == crs(wc)</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<pre class="r"><code># Write points to file and then read back in
+writeVector(rand_pts, &#39;data/extraction_example/random_points.shp&#39;)</code></pre>
+<pre class="r"><code># Save as a data frame in csv format
+xy &lt;- terra::geom(rand_pts, df = TRUE)[,c(1,3:4)]
+write_csv(xy, &#39;data/extraction_example/random_points.csv&#39;)</code></pre>
+<p>If you have your own point data, this is how you can read it into
+R</p>
+<pre class="r"><code># Read points back in
+# 1: as a shapefile
+rand_pts &lt;- vect(&#39;data/extraction_example/random_points.shp&#39;)
+head(rand_pts)</code></pre>
+<pre><code>##              name
+## 1        Ethiopia
+## 2           Libya
+## 3         Morocco
+## 4 Dem. Rep. Congo
+## 5 Dem. Rep. Congo
+## 6            Mali</code></pre>
+<pre class="r"><code># 2: as a csv
+rand_pts_df &lt;- read_csv(&#39;data/extraction_example/random_points.csv&#39;)</code></pre>
+<pre><code>## Rows: 1000 Columns: 3
+## ── Column specification ────────────────────────────────────────────────────────
+## Delimiter: &quot;,&quot;
+## dbl (3): geom, x, y
+## 
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>rand_pts &lt;- vect(rand_pts_df, geom = c(&#39;x&#39;,&#39;y&#39;), crs = crs(wc))
+head(rand_pts)</code></pre>
+<pre><code>##   geom
+## 1    1
+## 2    2
+## 3    3
+## 4    4
+## 5    5
+## 6    6</code></pre>
+<p>So that’s a few different ways to create or load in your point data
+in different formats, let’s now run the extraction:</p>
+<pre class="r"><code># Extract data for points
+# We don&#39;t need to specify a function, because these are just points and will extract data for one cell that they intersect with
+pts_ext &lt;- terra::extract(wc, rand_pts)
+head(pts_ext)</code></pre>
+<pre><code>##   ID bio1 bio2 bio3 bio4 bio5 bio6
+## 1  1  265  134   64 2274  355  148
+## 2  2  262  157   48 5733  440  113
+## 3  3  233   94   72  984  294  164
+## 4  4  247  144   69 1074  348  140
+## 5  5  283  143   56 3838  406  152
+## 6  6  231  118   60 2250  326  130</code></pre>
+<pre class="r"><code>rand_pts_ext &lt;- cbind(rand_pts, pts_ext)</code></pre>
+<pre class="r"><code># Convert to sf for plotting
+rand_pts_ext_sf &lt;- rand_pts_ext %&gt;% st_as_sf()
+afr_sf &lt;- afr %&gt;% st_as_sf()
+
+# Plot
+ggplot() +
+  geom_sf(data = afr_sf, fill = NA) +
+  geom_sf(data = rand_pts_ext_sf, aes(fill = bio1/10), pch = 21, size = 1) +
+  scale_fill_gradientn(colours = c(&#39;white&#39;, &#39;red&#39;),
+                       name = &#39;Mean ann. temp.&#39;) +
+  theme_void()</code></pre>
+<p><img src="Extras_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+</div>
+<div id="extract-using-buffer-around-points" class="section level4">
+<h4>Extract using buffer around points</h4>
+<pre class="r"><code># Buffers are essentially polygons, so this will work in a very similar way to our first example.
+buf_pts &lt;- buffer(rand_pts, width = 10000) # 10km buffer
+plot(afr)
+plot(buf_pts, add = T)</code></pre>
+<p><img src="Extras_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<p>We can use the same <code>my_summary</code> function as earlier
+because these are also polygons with multiple raster tiles intersecting
+with them. We therefore need to calculate summary values.</p>
+<pre class="r"><code>buf_ext &lt;- terra::extract(wc, buf_pts, fun = my_summary)</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
+<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
+<pre class="r"><code># warnings() produced due to some points falling in the ocean I presume...
+buf_pts_ext &lt;- cbind(buf_pts, buf_ext)</code></pre>
+<pre class="r"><code># Convert to sf for plotting
+buf_pts_ext_sf &lt;- buf_pts_ext %&gt;% st_as_sf()
+
+# Plot
+ggplot() +
+  geom_sf(data = afr_sf, fill = NA) +
+  geom_sf(data = buf_pts_ext_sf, aes(col = bio1.mean/10), pch = 1, size = 1) +
+  scale_colour_gradientn(colours = c(&#39;white&#39;, &#39;red&#39;),
+                       name = &#39;Mean ann. temp.&#39;) +
+  theme_void()</code></pre>
+<p><img src="Extras_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+</div>
 </div>
 <div id="tutorial-2-loading-in-netcdf-files" class="section level3">
 <h3>Tutorial 2: loading in netCDF files</h3>
+<p>netCDF downloaded from: <a
+href="http://aphrodite.st.hirosaki-u.ac.jp/products.html"
+class="uri">http://aphrodite.st.hirosaki-u.ac.jp/products.html</a></p>
+<div id="learning-objectives-1" class="section level4">
+<h4>Learning objectives</h4>
+<ol style="list-style-type: decimal">
+<li>To load in a netCDF (.nc) file</li>
+</ol>
+<pre class="r"><code>#### Load packages ----
+library(terra)
+library(tidyverse)
+library(lubridate)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;lubridate&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:terra&#39;:
+## 
+##     intersect, union</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     date, intersect, setdiff, union</code></pre>
+<pre class="r"><code>library(magick)</code></pre>
+<pre><code>## Linking to ImageMagick 6.9.12.3
+## Enabled features: cairo, fontconfig, freetype, heic, lcms, pango, raw, rsvg, webp
+## Disabled features: fftw, ghostscript, x11</code></pre>
+<pre class="r"><code>library(gganimate)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;gganimate&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:terra&#39;:
+## 
+##     animate</code></pre>
+</div>
+<div id="load-in-netcdf-using-terrarast" class="section level4">
+<h4>Load in netCDF using terra::rast()</h4>
+<pre class="r"><code>#### Load netCDF file ----
+ma_temp_2015 &lt;- rast(&#39;data/netCDF_example/APHRO_MA_TAVE_050deg_V1808.2015.nc&#39;)</code></pre>
+<pre><code>## Warning: [rast] unknown extent</code></pre>
+<pre class="r"><code>ma_temp_2015 &lt;- ma_temp_2015[[366:730]]
+names(ma_temp_2015)</code></pre>
+<pre><code>##   [1] &quot;tave_1&quot;   &quot;tave_2&quot;   &quot;tave_3&quot;   &quot;tave_4&quot;   &quot;tave_5&quot;   &quot;tave_6&quot;  
+##   [7] &quot;tave_7&quot;   &quot;tave_8&quot;   &quot;tave_9&quot;   &quot;tave_10&quot;  &quot;tave_11&quot;  &quot;tave_12&quot; 
+##  [13] &quot;tave_13&quot;  &quot;tave_14&quot;  &quot;tave_15&quot;  &quot;tave_16&quot;  &quot;tave_17&quot;  &quot;tave_18&quot; 
+##  [19] &quot;tave_19&quot;  &quot;tave_20&quot;  &quot;tave_21&quot;  &quot;tave_22&quot;  &quot;tave_23&quot;  &quot;tave_24&quot; 
+##  [25] &quot;tave_25&quot;  &quot;tave_26&quot;  &quot;tave_27&quot;  &quot;tave_28&quot;  &quot;tave_29&quot;  &quot;tave_30&quot; 
+##  [31] &quot;tave_31&quot;  &quot;tave_32&quot;  &quot;tave_33&quot;  &quot;tave_34&quot;  &quot;tave_35&quot;  &quot;tave_36&quot; 
+##  [37] &quot;tave_37&quot;  &quot;tave_38&quot;  &quot;tave_39&quot;  &quot;tave_40&quot;  &quot;tave_41&quot;  &quot;tave_42&quot; 
+##  [43] &quot;tave_43&quot;  &quot;tave_44&quot;  &quot;tave_45&quot;  &quot;tave_46&quot;  &quot;tave_47&quot;  &quot;tave_48&quot; 
+##  [49] &quot;tave_49&quot;  &quot;tave_50&quot;  &quot;tave_51&quot;  &quot;tave_52&quot;  &quot;tave_53&quot;  &quot;tave_54&quot; 
+##  [55] &quot;tave_55&quot;  &quot;tave_56&quot;  &quot;tave_57&quot;  &quot;tave_58&quot;  &quot;tave_59&quot;  &quot;tave_60&quot; 
+##  [61] &quot;tave_61&quot;  &quot;tave_62&quot;  &quot;tave_63&quot;  &quot;tave_64&quot;  &quot;tave_65&quot;  &quot;tave_66&quot; 
+##  [67] &quot;tave_67&quot;  &quot;tave_68&quot;  &quot;tave_69&quot;  &quot;tave_70&quot;  &quot;tave_71&quot;  &quot;tave_72&quot; 
+##  [73] &quot;tave_73&quot;  &quot;tave_74&quot;  &quot;tave_75&quot;  &quot;tave_76&quot;  &quot;tave_77&quot;  &quot;tave_78&quot; 
+##  [79] &quot;tave_79&quot;  &quot;tave_80&quot;  &quot;tave_81&quot;  &quot;tave_82&quot;  &quot;tave_83&quot;  &quot;tave_84&quot; 
+##  [85] &quot;tave_85&quot;  &quot;tave_86&quot;  &quot;tave_87&quot;  &quot;tave_88&quot;  &quot;tave_89&quot;  &quot;tave_90&quot; 
+##  [91] &quot;tave_91&quot;  &quot;tave_92&quot;  &quot;tave_93&quot;  &quot;tave_94&quot;  &quot;tave_95&quot;  &quot;tave_96&quot; 
+##  [97] &quot;tave_97&quot;  &quot;tave_98&quot;  &quot;tave_99&quot;  &quot;tave_100&quot; &quot;tave_101&quot; &quot;tave_102&quot;
+## [103] &quot;tave_103&quot; &quot;tave_104&quot; &quot;tave_105&quot; &quot;tave_106&quot; &quot;tave_107&quot; &quot;tave_108&quot;
+## [109] &quot;tave_109&quot; &quot;tave_110&quot; &quot;tave_111&quot; &quot;tave_112&quot; &quot;tave_113&quot; &quot;tave_114&quot;
+## [115] &quot;tave_115&quot; &quot;tave_116&quot; &quot;tave_117&quot; &quot;tave_118&quot; &quot;tave_119&quot; &quot;tave_120&quot;
+## [121] &quot;tave_121&quot; &quot;tave_122&quot; &quot;tave_123&quot; &quot;tave_124&quot; &quot;tave_125&quot; &quot;tave_126&quot;
+## [127] &quot;tave_127&quot; &quot;tave_128&quot; &quot;tave_129&quot; &quot;tave_130&quot; &quot;tave_131&quot; &quot;tave_132&quot;
+## [133] &quot;tave_133&quot; &quot;tave_134&quot; &quot;tave_135&quot; &quot;tave_136&quot; &quot;tave_137&quot; &quot;tave_138&quot;
+## [139] &quot;tave_139&quot; &quot;tave_140&quot; &quot;tave_141&quot; &quot;tave_142&quot; &quot;tave_143&quot; &quot;tave_144&quot;
+## [145] &quot;tave_145&quot; &quot;tave_146&quot; &quot;tave_147&quot; &quot;tave_148&quot; &quot;tave_149&quot; &quot;tave_150&quot;
+## [151] &quot;tave_151&quot; &quot;tave_152&quot; &quot;tave_153&quot; &quot;tave_154&quot; &quot;tave_155&quot; &quot;tave_156&quot;
+## [157] &quot;tave_157&quot; &quot;tave_158&quot; &quot;tave_159&quot; &quot;tave_160&quot; &quot;tave_161&quot; &quot;tave_162&quot;
+## [163] &quot;tave_163&quot; &quot;tave_164&quot; &quot;tave_165&quot; &quot;tave_166&quot; &quot;tave_167&quot; &quot;tave_168&quot;
+## [169] &quot;tave_169&quot; &quot;tave_170&quot; &quot;tave_171&quot; &quot;tave_172&quot; &quot;tave_173&quot; &quot;tave_174&quot;
+## [175] &quot;tave_175&quot; &quot;tave_176&quot; &quot;tave_177&quot; &quot;tave_178&quot; &quot;tave_179&quot; &quot;tave_180&quot;
+## [181] &quot;tave_181&quot; &quot;tave_182&quot; &quot;tave_183&quot; &quot;tave_184&quot; &quot;tave_185&quot; &quot;tave_186&quot;
+## [187] &quot;tave_187&quot; &quot;tave_188&quot; &quot;tave_189&quot; &quot;tave_190&quot; &quot;tave_191&quot; &quot;tave_192&quot;
+## [193] &quot;tave_193&quot; &quot;tave_194&quot; &quot;tave_195&quot; &quot;tave_196&quot; &quot;tave_197&quot; &quot;tave_198&quot;
+## [199] &quot;tave_199&quot; &quot;tave_200&quot; &quot;tave_201&quot; &quot;tave_202&quot; &quot;tave_203&quot; &quot;tave_204&quot;
+## [205] &quot;tave_205&quot; &quot;tave_206&quot; &quot;tave_207&quot; &quot;tave_208&quot; &quot;tave_209&quot; &quot;tave_210&quot;
+## [211] &quot;tave_211&quot; &quot;tave_212&quot; &quot;tave_213&quot; &quot;tave_214&quot; &quot;tave_215&quot; &quot;tave_216&quot;
+## [217] &quot;tave_217&quot; &quot;tave_218&quot; &quot;tave_219&quot; &quot;tave_220&quot; &quot;tave_221&quot; &quot;tave_222&quot;
+## [223] &quot;tave_223&quot; &quot;tave_224&quot; &quot;tave_225&quot; &quot;tave_226&quot; &quot;tave_227&quot; &quot;tave_228&quot;
+## [229] &quot;tave_229&quot; &quot;tave_230&quot; &quot;tave_231&quot; &quot;tave_232&quot; &quot;tave_233&quot; &quot;tave_234&quot;
+## [235] &quot;tave_235&quot; &quot;tave_236&quot; &quot;tave_237&quot; &quot;tave_238&quot; &quot;tave_239&quot; &quot;tave_240&quot;
+## [241] &quot;tave_241&quot; &quot;tave_242&quot; &quot;tave_243&quot; &quot;tave_244&quot; &quot;tave_245&quot; &quot;tave_246&quot;
+## [247] &quot;tave_247&quot; &quot;tave_248&quot; &quot;tave_249&quot; &quot;tave_250&quot; &quot;tave_251&quot; &quot;tave_252&quot;
+## [253] &quot;tave_253&quot; &quot;tave_254&quot; &quot;tave_255&quot; &quot;tave_256&quot; &quot;tave_257&quot; &quot;tave_258&quot;
+## [259] &quot;tave_259&quot; &quot;tave_260&quot; &quot;tave_261&quot; &quot;tave_262&quot; &quot;tave_263&quot; &quot;tave_264&quot;
+## [265] &quot;tave_265&quot; &quot;tave_266&quot; &quot;tave_267&quot; &quot;tave_268&quot; &quot;tave_269&quot; &quot;tave_270&quot;
+## [271] &quot;tave_271&quot; &quot;tave_272&quot; &quot;tave_273&quot; &quot;tave_274&quot; &quot;tave_275&quot; &quot;tave_276&quot;
+## [277] &quot;tave_277&quot; &quot;tave_278&quot; &quot;tave_279&quot; &quot;tave_280&quot; &quot;tave_281&quot; &quot;tave_282&quot;
+## [283] &quot;tave_283&quot; &quot;tave_284&quot; &quot;tave_285&quot; &quot;tave_286&quot; &quot;tave_287&quot; &quot;tave_288&quot;
+## [289] &quot;tave_289&quot; &quot;tave_290&quot; &quot;tave_291&quot; &quot;tave_292&quot; &quot;tave_293&quot; &quot;tave_294&quot;
+## [295] &quot;tave_295&quot; &quot;tave_296&quot; &quot;tave_297&quot; &quot;tave_298&quot; &quot;tave_299&quot; &quot;tave_300&quot;
+## [301] &quot;tave_301&quot; &quot;tave_302&quot; &quot;tave_303&quot; &quot;tave_304&quot; &quot;tave_305&quot; &quot;tave_306&quot;
+## [307] &quot;tave_307&quot; &quot;tave_308&quot; &quot;tave_309&quot; &quot;tave_310&quot; &quot;tave_311&quot; &quot;tave_312&quot;
+## [313] &quot;tave_313&quot; &quot;tave_314&quot; &quot;tave_315&quot; &quot;tave_316&quot; &quot;tave_317&quot; &quot;tave_318&quot;
+## [319] &quot;tave_319&quot; &quot;tave_320&quot; &quot;tave_321&quot; &quot;tave_322&quot; &quot;tave_323&quot; &quot;tave_324&quot;
+## [325] &quot;tave_325&quot; &quot;tave_326&quot; &quot;tave_327&quot; &quot;tave_328&quot; &quot;tave_329&quot; &quot;tave_330&quot;
+## [331] &quot;tave_331&quot; &quot;tave_332&quot; &quot;tave_333&quot; &quot;tave_334&quot; &quot;tave_335&quot; &quot;tave_336&quot;
+## [337] &quot;tave_337&quot; &quot;tave_338&quot; &quot;tave_339&quot; &quot;tave_340&quot; &quot;tave_341&quot; &quot;tave_342&quot;
+## [343] &quot;tave_343&quot; &quot;tave_344&quot; &quot;tave_345&quot; &quot;tave_346&quot; &quot;tave_347&quot; &quot;tave_348&quot;
+## [349] &quot;tave_349&quot; &quot;tave_350&quot; &quot;tave_351&quot; &quot;tave_352&quot; &quot;tave_353&quot; &quot;tave_354&quot;
+## [355] &quot;tave_355&quot; &quot;tave_356&quot; &quot;tave_357&quot; &quot;tave_358&quot; &quot;tave_359&quot; &quot;tave_360&quot;
+## [361] &quot;tave_361&quot; &quot;tave_362&quot; &quot;tave_363&quot; &quot;tave_364&quot; &quot;tave_365&quot;</code></pre>
+<pre class="r"><code># warning provided for no extent, so we will need to assign this manually from the metadata
+ext(ma_temp_2015)</code></pre>
+<pre><code>## SpatExtent : 0, 1, 0, 1 (xmin, xmax, ymin, ymax)</code></pre>
+<pre class="r"><code>ma_temp_2015 &lt;- set.ext(ma_temp_2015, c(60, 150, -15, 55))
+ext(ma_temp_2015)</code></pre>
+<pre><code>## SpatExtent : 60, 150, -15, 55 (xmin, xmax, ymin, ymax)</code></pre>
+<pre class="r"><code># Plot a single raster
+plot(ma_temp_2015[[1]])</code></pre>
+<p><img src="Extras_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+<pre class="r"><code># This looks upside down! 
+# We can use flip to turn this the correct way around
+ma_temp_2015_flip &lt;- flip(ma_temp_2015)
+
+# Plot the flipped raster
+plot(ma_temp_2015_flip[[1]])</code></pre>
+<p><img src="Extras_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+<p>Your netCDF file is now ready to analyse!</p>
+<p>A short bonus section below to animate the data:</p>
+<pre class="r"><code>#### Let&#39;s convert it to a data frame to animate
+# Convert it to a data frame and pivot to a long df
+ma_temp_2015_flip_df &lt;- as.data.frame(ma_temp_2015_flip, xy = T) %&gt;% pivot_longer(cols = 3:ncol(.), names_to = &#39;doy&#39;, values_to = &#39;daily_temp&#39;)</code></pre>
+<pre class="r"><code># Extrate the date from the raster names
+ma_temp_2015_flip_df$doy &lt;- gsub(&#39;tave_&#39;, &#39;&#39;, ma_temp_2015_flip_df$doy)
+ma_temp_2015_flip_df$date &lt;- as_date(as.numeric(ma_temp_2015_flip_df$doy), origin = &#39;2014-12-31&#39;)</code></pre>
+<pre class="r"><code>#### Map animation
+anim_map &lt;- ggplot(ma_temp_2015_flip_df) +
+  geom_tile(aes(x = x, y = y, fill = daily_temp, col = daily_temp)) +
+  scale_fill_gradient2(low = &#39;blue&#39;, mid = &#39;white&#39;, high = &#39;red&#39;) +
+  scale_colour_gradient2(low = &#39;blue&#39;, mid = &#39;white&#39;, high = &#39;red&#39;) +
+  theme_void() +
+  labs(title = &quot;{frame_time}&quot;) +
+  gganimate::transition_time(date)</code></pre>
+<pre class="r"><code># Render the plot
+gganimate::animate(anim_map, fps = 15,
+                                    width = 720, height = 480,
+                                    res = 150,
+                   renderer = gifski_renderer(&quot;output/figs/netCDF_example/netCDF_example.gif&quot;))</code></pre>
+<p><img
+src="output/figs/netCDF_example/netCDF_example.gif" /><!-- --></p>
+</div>
 </div>
 
 

@@ -166,7 +166,7 @@ occ_filt_10bin <- occfilt_env(
   env_layer = cov_clean,
   nbins = 10 # run ?occfilt_env to find out more on the method
 )
-# This removes 125 records and only keeps 99 records due to similarity!
+# This removes ~120 records and only keeps ~100 records due to similarity!
 
 # Plot our old points and new filtered points
 par(mfrow = c(1,1))

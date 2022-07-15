@@ -10,10 +10,266 @@ output:
     theme: paper
 ---
 
-### Learning objectives
-
 ### Introduction
 
 ### Tutorial 1: extracting raster data by vectors
 
+#### Learning objectives
+
+1.  To extract environmental data using points or polygons
+
+```{r libraries}
+#### Libraries
+library(terra)
+library(sf)
+library(tidyverse)
+library(rnaturalearth)
+```
+
+#### Load in environmental data
+
+```{r load worldclim}
+# Load in worldclim data
+worldclim <- rast('data/sdm/worldclim.tif')
+# Subset the data to the first 6 variables just to make the example run faster
+wc <- worldclim[[1:6]]
+# check the variables
+names(wc)
+```
+
+#### Extract using polygon data
+
+```{r load africa}
+# load in a country borders for Africa from online
+# you could load in your own shapefile here
+afr <- vect(ne_countries(continent = 'Africa', returnclass = 'sf'))
+head(afr)
+# there are lots of variables, let's keep only the country name
+```
+
+```{r plot africa}
+afr <- afr[,'name']
+plot(afr)
+```
+
+```{r check projections}
+# Check projections and reproject if needed
+crs(afr) == crs(wc)
+afr_prj <- project(afr, wc)
+crs(afr_prj) == crs(wc)
+```
+
+```{r}
+# Crop & mask the worldclim layer to the Africa layer
+wc_mask <- mask(crop(wc, afr_prj), afr_prj)
+plot(wc_mask)
+```
+
+```{r}
+# Create a custom function to summarise the environmental raster data for each country
+my_summary <- function(x) c(mean = mean(x, na.rm = T), min = min(x, na.rm=T), max = max(x, na.rm=T))
+```
+
+```{r}
+# Use terra::extract() to get multiple summary values
+poly_ext <- terra::extract(wc_mask, afr_prj, fun = my_summary)
+head(poly_ext)
+# Bind the result back on to the polygons
+afr_ext <- cbind(afr_prj, poly_ext)
+```
+
+```{r}
+# Convert the data to an sf object for plotting
+afr_ext_sf <- afr_ext %>% st_as_sf()
+
+# Plot
+ggplot() +
+  geom_sf(data = afr_ext_sf, aes(fill = bio1.mean/10)) +
+  scale_fill_gradientn(colours = c('white', 'red'),
+                       name = 'Mean ann. temp.') +
+  theme_void()
+```
+
+#### Extract using point data
+
+```{r}
+# Create 1000 random points over Africa
+rand_pts <- terra::spatSample(x = afr, size = 1000, method = "random")
+plot(afr)
+points(rand_pts, cex = 0.5, col = 'red')
+```
+
+```{r}
+# Check projection
+crs(rand_pts) == crs(wc)
+rand_pts <- project(rand_pts, wc)
+crs(rand_pts) == crs(wc)
+```
+
+```{r, eval = FALSE}
+# Write points to file and then read back in
+writeVector(rand_pts, 'data/extraction_example/random_points.shp')
+```
+
+```{r, eval = FALSE}
+# Save as a data frame in csv format
+xy <- terra::geom(rand_pts, df = TRUE)[,c(1,3:4)]
+write_csv(xy, 'data/extraction_example/random_points.csv')
+```
+
+If you have your own point data, this is how you can read it into R
+
+```{r}
+# Read points back in
+# 1: as a shapefile
+rand_pts <- vect('data/extraction_example/random_points.shp')
+head(rand_pts)
+```
+
+```{r}
+# 2: as a csv
+rand_pts_df <- read_csv('data/extraction_example/random_points.csv')
+rand_pts <- vect(rand_pts_df, geom = c('x','y'), crs = crs(wc))
+head(rand_pts)
+```
+
+So that's a few different ways to create or load in your point data in different formats, let's now run the extraction:
+
+```{r}
+# Extract data for points
+# We don't need to specify a function, because these are just points and will extract data for one cell that they intersect with
+pts_ext <- terra::extract(wc, rand_pts)
+head(pts_ext)
+rand_pts_ext <- cbind(rand_pts, pts_ext)
+```
+
+```{r}
+# Convert to sf for plotting
+rand_pts_ext_sf <- rand_pts_ext %>% st_as_sf()
+afr_sf <- afr %>% st_as_sf()
+
+# Plot
+ggplot() +
+  geom_sf(data = afr_sf, fill = NA) +
+  geom_sf(data = rand_pts_ext_sf, aes(fill = bio1/10), pch = 21, size = 1) +
+  scale_fill_gradientn(colours = c('white', 'red'),
+                       name = 'Mean ann. temp.') +
+  theme_void()
+```
+
+#### Extract using buffer around points
+
+```{r}
+# Buffers are essentially polygons, so this will work in a very similar way to our first example.
+buf_pts <- buffer(rand_pts, width = 10000) # 10km buffer
+plot(afr)
+plot(buf_pts, add = T)
+```
+
+We can use the same `my_summary` function as earlier because these are also polygons with multiple raster tiles intersecting with them. We therefore need to calculate summary values.
+
+```{r}
+buf_ext <- terra::extract(wc, buf_pts, fun = my_summary)
+# warnings() produced due to some points falling in the ocean I presume...
+buf_pts_ext <- cbind(buf_pts, buf_ext)
+```
+
+```{r}
+# Convert to sf for plotting
+buf_pts_ext_sf <- buf_pts_ext %>% st_as_sf()
+
+# Plot
+ggplot() +
+  geom_sf(data = afr_sf, fill = NA) +
+  geom_sf(data = buf_pts_ext_sf, aes(col = bio1.mean/10), pch = 1, size = 1) +
+  scale_colour_gradientn(colours = c('white', 'red'),
+                       name = 'Mean ann. temp.') +
+  theme_void()
+```
+
 ### Tutorial 2: loading in netCDF files
+
+netCDF downloaded from:
+http://aphrodite.st.hirosaki-u.ac.jp/products.html
+
+#### Learning objectives
+
+1. To load in a netCDF (.nc) file
+
+```{r}
+#### Load packages ----
+library(terra)
+library(tidyverse)
+library(lubridate)
+library(magick)
+library(gganimate)
+```
+
+#### Load in netCDF using terra::rast()
+
+```{r}
+#### Load netCDF file ----
+ma_temp_2015 <- rast('data/netCDF_example/APHRO_MA_TAVE_050deg_V1808.2015.nc')
+ma_temp_2015 <- ma_temp_2015[[366:730]]
+names(ma_temp_2015)
+```
+
+```{r}
+# warning provided for no extent, so we will need to assign this manually from the metadata
+ext(ma_temp_2015)
+ma_temp_2015 <- set.ext(ma_temp_2015, c(60, 150, -15, 55))
+ext(ma_temp_2015)
+```
+
+```{r}
+# Plot a single raster
+plot(ma_temp_2015[[1]])
+```
+
+```{r}
+# This looks upside down! 
+# We can use flip to turn this the correct way around
+ma_temp_2015_flip <- flip(ma_temp_2015)
+
+# Plot the flipped raster
+plot(ma_temp_2015_flip[[1]])
+```
+
+Your netCDF file is now ready to analyse!
+
+A short bonus section below to animate the data:
+
+```{r}
+#### Let's convert it to a data frame to animate
+# Convert it to a data frame and pivot to a long df
+ma_temp_2015_flip_df <- as.data.frame(ma_temp_2015_flip, xy = T) %>% pivot_longer(cols = 3:ncol(.), names_to = 'doy', values_to = 'daily_temp')
+```
+
+```{r}
+# Extrate the date from the raster names
+ma_temp_2015_flip_df$doy <- gsub('tave_', '', ma_temp_2015_flip_df$doy)
+ma_temp_2015_flip_df$date <- as_date(as.numeric(ma_temp_2015_flip_df$doy), origin = '2014-12-31')
+```
+
+```{r, eval = FALSE}
+#### Map animation
+anim_map <- ggplot(ma_temp_2015_flip_df) +
+  geom_tile(aes(x = x, y = y, fill = daily_temp, col = daily_temp)) +
+  scale_fill_gradient2(low = 'blue', mid = 'white', high = 'red') +
+  scale_colour_gradient2(low = 'blue', mid = 'white', high = 'red') +
+  theme_void() +
+  labs(title = "{frame_time}") +
+  gganimate::transition_time(date)
+```
+
+```{r, eval = FALSE}
+# Render the plot
+gganimate::animate(anim_map, fps = 15,
+                                    width = 720, height = 480,
+                                    res = 150,
+                   renderer = gifski_renderer("output/figs/netCDF_example/netCDF_example.gif"))
+```
+
+```{r, echo = FALSE}
+knitr::include_graphics("output/figs/netCDF_example/netCDF_example.gif")
+```
