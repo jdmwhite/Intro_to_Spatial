@@ -10,6 +10,10 @@ output:
 
 Note: the slides and video recordings will be added to the site once available.
 
+```{r out.width='100%', echo = FALSE}
+knitr::include_graphics("images/combined_outputs.png")
+```
+
 ### Introduction
 
 This short workshop for SAEON GSN will introduce you to spatial data and analysis in R. It is aimed at R beginners to intermediates, who may or may not have GIS-type background in other programming platforms. Use this website together with the [slides]() and [video recordings](). We will explore different types of spatial data and introduce you to spatial anaylses workflows through worked examples. These worked examples will include:
