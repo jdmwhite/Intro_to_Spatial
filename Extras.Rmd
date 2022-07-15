@@ -12,13 +12,15 @@ output:
 
 ### Introduction
 
+There are some spatial data related questions that I get commonly asked. These include how to extract raster data by different types of vectors and how to load a netCDF file into R. I have included two short tutorials below to show how these are done: 
+
 ### Tutorial 1: extracting raster data by vectors
 
 #### Learning objectives
 
 1.  To extract environmental data using points or polygons
 
-```{r libraries}
+```{r libraries, message = FALSE, warning=FALSE}
 #### Libraries
 library(terra)
 library(sf)
@@ -43,7 +45,7 @@ names(wc)
 # load in a country borders for Africa from online
 # you could load in your own shapefile here
 afr <- vect(ne_countries(continent = 'Africa', returnclass = 'sf'))
-head(afr)
+names(afr)
 # there are lots of variables, let's keep only the country name
 ```
 
@@ -168,11 +170,13 @@ plot(buf_pts, add = T)
 
 We can use the same `my_summary` function as earlier because these are also polygons with multiple raster tiles intersecting with them. We therefore need to calculate summary values.
 
-```{r}
+```{r, message = FALSE, warning=FALSE}
 buf_ext <- terra::extract(wc, buf_pts, fun = my_summary)
-# warnings() produced due to some points falling in the ocean I presume...
+
 buf_pts_ext <- cbind(buf_pts, buf_ext)
 ```
+
+This function produced several warnings. Use the `warnings()` function to identify the cause. In this case, it is likely because some buffers overlapped with the ocean. 
 
 ```{r}
 # Convert to sf for plotting
@@ -196,7 +200,7 @@ http://aphrodite.st.hirosaki-u.ac.jp/products.html
 
 1. To load in a netCDF (.nc) file
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 #### Load packages ----
 library(terra)
 library(tidyverse)

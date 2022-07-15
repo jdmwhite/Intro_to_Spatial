@@ -361,6 +361,10 @@ div.tocify {
 
 <div id="introduction" class="section level3">
 <h3>Introduction</h3>
+<p>There are some spatial data related questions that I get commonly
+asked. These include how to extract raster data by different types of
+vectors and how to load a netCDF file into R. I have included two short
+tutorials below to show how these are done:</p>
 </div>
 <div id="tutorial-1-extracting-raster-data-by-vectors"
 class="section level3">
@@ -371,23 +375,10 @@ class="section level3">
 <li>To extract environmental data using points or polygons</li>
 </ol>
 <pre class="r"><code>#### Libraries
-library(terra)</code></pre>
-<pre><code>## terra 1.5.21</code></pre>
-<pre class="r"><code>library(sf)</code></pre>
-<pre><code>## Linking to GEOS 3.10.2, GDAL 3.4.2, PROJ 8.2.1; sf_use_s2() is TRUE</code></pre>
-<pre class="r"><code>library(tidyverse)</code></pre>
-<pre><code>## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──</code></pre>
-<pre><code>## ✔ ggplot2 3.3.6     ✔ purrr   0.3.4
-## ✔ tibble  3.1.7     ✔ dplyr   1.0.9
-## ✔ tidyr   1.2.0     ✔ stringr 1.4.0
-## ✔ readr   2.1.2     ✔ forcats 0.5.1</code></pre>
-<pre><code>## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-## ✖ ggplot2::arrow() masks terra::arrow()
-## ✖ tidyr::extract() masks terra::extract()
-## ✖ dplyr::filter()  masks stats::filter()
-## ✖ dplyr::lag()     masks stats::lag()
-## ✖ dplyr::src()     masks terra::src()</code></pre>
-<pre class="r"><code>library(rnaturalearth)</code></pre>
+library(terra)
+library(sf)
+library(tidyverse)
+library(rnaturalearth)</code></pre>
 </div>
 <div id="load-in-environmental-data" class="section level4">
 <h4>Load in environmental data</h4>
@@ -404,84 +395,20 @@ names(wc)</code></pre>
 <pre class="r"><code># load in a country borders for Africa from online
 # you could load in your own shapefile here
 afr &lt;- vect(ne_countries(continent = &#39;Africa&#39;, returnclass = &#39;sf&#39;))
-head(afr)</code></pre>
-<pre><code>##   scalerank      featurecla labelrank               sovereignt sov_a3 adm0_dif
-## 1         1 Admin-0 country         3                   Angola    AGO        0
-## 2         1 Admin-0 country         6                  Burundi    BDI        0
-## 3         1 Admin-0 country         5                    Benin    BEN        0
-## 4         1 Admin-0 country         3             Burkina Faso    BFA        0
-## 5         1 Admin-0 country         4                 Botswana    BWA        0
-## 6         1 Admin-0 country         4 Central African Republic    CAF        0
-##   level              type                    admin adm0_a3 geou_dif
-## 1     2 Sovereign country                   Angola     AGO        0
-## 2     2 Sovereign country                  Burundi     BDI        0
-## 3     2 Sovereign country                    Benin     BEN        0
-## 4     2 Sovereign country             Burkina Faso     BFA        0
-## 5     2 Sovereign country                 Botswana     BWA        0
-## 6     2 Sovereign country Central African Republic     CAF        0
-##                    geounit gu_a3 su_dif                  subunit su_a3 brk_diff
-## 1                   Angola   AGO      0                   Angola   AGO        0
-## 2                  Burundi   BDI      0                  Burundi   BDI        0
-## 3                    Benin   BEN      0                    Benin   BEN        0
-## 4             Burkina Faso   BFA      0             Burkina Faso   BFA        0
-## 5                 Botswana   BWA      0                 Botswana   BWA        0
-## 6 Central African Republic   CAF      0 Central African Republic   CAF        0
-##                   name                name_long brk_a3             brk_name
-## 1               Angola                   Angola    AGO               Angola
-## 2              Burundi                  Burundi    BDI              Burundi
-## 3                Benin                    Benin    BEN                Benin
-## 4         Burkina Faso             Burkina Faso    BFA         Burkina Faso
-## 5             Botswana                 Botswana    BWA             Botswana
-## 6 Central African Rep. Central African Republic    CAF Central African Rep.
-##   brk_group abbrev postal                   formal_en formal_fr note_adm0
-## 1      &lt;NA&gt;   Ang.     AO People&#39;s Republic of Angola      &lt;NA&gt;      &lt;NA&gt;
-## 2      &lt;NA&gt;   Bur.     BI         Republic of Burundi      &lt;NA&gt;      &lt;NA&gt;
-## 3      &lt;NA&gt;  Benin     BJ           Republic of Benin      &lt;NA&gt;      &lt;NA&gt;
-## 4      &lt;NA&gt;   B.F.     BF                Burkina Faso      &lt;NA&gt;      &lt;NA&gt;
-## 5      &lt;NA&gt;   Bwa.     BW        Republic of Botswana      &lt;NA&gt;      &lt;NA&gt;
-## 6      &lt;NA&gt; C.A.R.     CF    Central African Republic      &lt;NA&gt;      &lt;NA&gt;
-##   note_brk                name_sort name_alt mapcolor7 mapcolor8 mapcolor9
-## 1     &lt;NA&gt;                   Angola     &lt;NA&gt;         3         2         6
-## 2     &lt;NA&gt;                  Burundi     &lt;NA&gt;         2         2         5
-## 3     &lt;NA&gt;                    Benin     &lt;NA&gt;         1         2         2
-## 4     &lt;NA&gt;             Burkina Faso     &lt;NA&gt;         2         1         5
-## 5     &lt;NA&gt;                 Botswana     &lt;NA&gt;         6         5         7
-## 6     &lt;NA&gt; Central African Republic     &lt;NA&gt;         5         6         6
-##   mapcolor13  pop_est gdp_md_est pop_year lastcensus gdp_year
-## 1          1 12799293     110300       NA       1970       NA
-## 2          8  8988091       3102       NA       2008       NA
-## 3         12  8791832      12830       NA       2002       NA
-## 4         11 15746232      17820       NA       2006       NA
-## 5          3  1990876      27060       NA       2011       NA
-## 6          9  4511488       3198       NA       2003       NA
-##                     economy             income_grp wikipedia fips_10 iso_a2
-## 1 7. Least developed region 3. Upper middle income        NA    &lt;NA&gt;     AO
-## 2 7. Least developed region          5. Low income        NA    &lt;NA&gt;     BI
-## 3 7. Least developed region          5. Low income        NA    &lt;NA&gt;     BJ
-## 4 7. Least developed region          5. Low income        NA    &lt;NA&gt;     BF
-## 5      6. Developing region 3. Upper middle income        NA    &lt;NA&gt;     BW
-## 6 7. Least developed region          5. Low income        NA    &lt;NA&gt;     CF
-##   iso_a3 iso_n3 un_a3 wb_a2 wb_a3 woe_id adm0_a3_is adm0_a3_us adm0_a3_un
-## 1    AGO    024   024    AO   AGO     NA        AGO        AGO         NA
-## 2    BDI    108   108    BI   BDI     NA        BDI        BDI         NA
-## 3    BEN    204   204    BJ   BEN     NA        BEN        BEN         NA
-## 4    BFA    854   854    BF   BFA     NA        BFA        BFA         NA
-## 5    BWA    072   072    BW   BWA     NA        BWA        BWA         NA
-## 6    CAF    140   140    CF   CAF     NA        CAF        CAF         NA
-##   adm0_a3_wb continent region_un       subregion          region_wb name_len
-## 1         NA    Africa    Africa   Middle Africa Sub-Saharan Africa        6
-## 2         NA    Africa    Africa  Eastern Africa Sub-Saharan Africa        7
-## 3         NA    Africa    Africa  Western Africa Sub-Saharan Africa        5
-## 4         NA    Africa    Africa  Western Africa Sub-Saharan Africa       12
-## 5         NA    Africa    Africa Southern Africa Sub-Saharan Africa        8
-## 6         NA    Africa    Africa   Middle Africa Sub-Saharan Africa       20
-##   long_len abbrev_len tiny homepart
-## 1        6          4   NA        1
-## 2        7          4   NA        1
-## 3        5          5   NA        1
-## 4       12          4   NA        1
-## 5        8          4   NA        1
-## 6       24          6   NA        1</code></pre>
+names(afr)</code></pre>
+<pre><code>##  [1] &quot;scalerank&quot;  &quot;featurecla&quot; &quot;labelrank&quot;  &quot;sovereignt&quot; &quot;sov_a3&quot;    
+##  [6] &quot;adm0_dif&quot;   &quot;level&quot;      &quot;type&quot;       &quot;admin&quot;      &quot;adm0_a3&quot;   
+## [11] &quot;geou_dif&quot;   &quot;geounit&quot;    &quot;gu_a3&quot;      &quot;su_dif&quot;     &quot;subunit&quot;   
+## [16] &quot;su_a3&quot;      &quot;brk_diff&quot;   &quot;name&quot;       &quot;name_long&quot;  &quot;brk_a3&quot;    
+## [21] &quot;brk_name&quot;   &quot;brk_group&quot;  &quot;abbrev&quot;     &quot;postal&quot;     &quot;formal_en&quot; 
+## [26] &quot;formal_fr&quot;  &quot;note_adm0&quot;  &quot;note_brk&quot;   &quot;name_sort&quot;  &quot;name_alt&quot;  
+## [31] &quot;mapcolor7&quot;  &quot;mapcolor8&quot;  &quot;mapcolor9&quot;  &quot;mapcolor13&quot; &quot;pop_est&quot;   
+## [36] &quot;gdp_md_est&quot; &quot;pop_year&quot;   &quot;lastcensus&quot; &quot;gdp_year&quot;   &quot;economy&quot;   
+## [41] &quot;income_grp&quot; &quot;wikipedia&quot;  &quot;fips_10&quot;    &quot;iso_a2&quot;     &quot;iso_a3&quot;    
+## [46] &quot;iso_n3&quot;     &quot;un_a3&quot;      &quot;wb_a2&quot;      &quot;wb_a3&quot;      &quot;woe_id&quot;    
+## [51] &quot;adm0_a3_is&quot; &quot;adm0_a3_us&quot; &quot;adm0_a3_un&quot; &quot;adm0_a3_wb&quot; &quot;continent&quot; 
+## [56] &quot;region_un&quot;  &quot;subregion&quot;  &quot;region_wb&quot;  &quot;name_len&quot;   &quot;long_len&quot;  
+## [61] &quot;abbrev_len&quot; &quot;tiny&quot;       &quot;homepart&quot;</code></pre>
 <pre class="r"><code># there are lots of variables, let&#39;s keep only the country name</code></pre>
 <pre class="r"><code>afr &lt;- afr[,&#39;name&#39;]
 plot(afr)</code></pre>
@@ -621,45 +548,12 @@ plot(buf_pts, add = T)</code></pre>
 <p>We can use the same <code>my_summary</code> function as earlier
 because these are also polygons with multiple raster tiles intersecting
 with them. We therefore need to calculate summary values.</p>
-<pre class="r"><code>buf_ext &lt;- terra::extract(wc, buf_pts, fun = my_summary)</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre><code>## Warning in min(x, na.rm = T): no non-missing arguments to min; returning Inf</code></pre>
-<pre><code>## Warning in max(x, na.rm = T): no non-missing arguments to max; returning -Inf</code></pre>
-<pre class="r"><code># warnings() produced due to some points falling in the ocean I presume...
+<pre class="r"><code>buf_ext &lt;- terra::extract(wc, buf_pts, fun = my_summary)
+
 buf_pts_ext &lt;- cbind(buf_pts, buf_ext)</code></pre>
+<p>This function produced several warnings. Use the
+<code>warnings()</code> function to identify the cause. In this case, it
+is likely because some buffers overlapped with the ocean.</p>
 <pre class="r"><code># Convert to sf for plotting
 buf_pts_ext_sf &lt;- buf_pts_ext %&gt;% st_as_sf()
 
@@ -686,25 +580,9 @@ class="uri">http://aphrodite.st.hirosaki-u.ac.jp/products.html</a></p>
 <pre class="r"><code>#### Load packages ----
 library(terra)
 library(tidyverse)
-library(lubridate)</code></pre>
-<pre><code>## 
-## Attaching package: &#39;lubridate&#39;</code></pre>
-<pre><code>## The following objects are masked from &#39;package:terra&#39;:
-## 
-##     intersect, union</code></pre>
-<pre><code>## The following objects are masked from &#39;package:base&#39;:
-## 
-##     date, intersect, setdiff, union</code></pre>
-<pre class="r"><code>library(magick)</code></pre>
-<pre><code>## Linking to ImageMagick 6.9.12.3
-## Enabled features: cairo, fontconfig, freetype, heic, lcms, pango, raw, rsvg, webp
-## Disabled features: fftw, ghostscript, x11</code></pre>
-<pre class="r"><code>library(gganimate)</code></pre>
-<pre><code>## 
-## Attaching package: &#39;gganimate&#39;</code></pre>
-<pre><code>## The following object is masked from &#39;package:terra&#39;:
-## 
-##     animate</code></pre>
+library(lubridate)
+library(magick)
+library(gganimate)</code></pre>
 </div>
 <div id="load-in-netcdf-using-terrarast" class="section level4">
 <h4>Load in netCDF using terra::rast()</h4>

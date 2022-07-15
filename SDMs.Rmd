@@ -14,11 +14,30 @@ Note: thank you to Geethen Singh for an earlier version of this practical.
 
 ### Learning objectives
 
+1. Define a calibration area
+2. Process environmental covariate data
+3. Process species presence data
+4. Create pseudo-absence species points
+5. Account for spatial autocorrelation with spatial blocks
+6. Fit a random forest model
+7. Estimate model accuracy
+8. Determine variable importance
+9. Visualise variable response curves
+10. Produce a habitat suitability prediction
+
 ### Introduction
+
+Species Distribution models (SDMs, also called habitat suitability models or ecological niche models, depending on the goal) involves the identification of areas of likely species occurrence by learning a relationship between known occurrences and environmental variables (covariates). The ‘learning’ of species-environment relationships is accomplished by machine learning algorithms. For this short course, the inner-workings of these algorithms are beyond the scope of our available time. There are many papers describing SDMs, but if you are new to the field, this [Elith & Leathwick 2009](https://www.annualreviews.org/doi/abs/10.1146/annurev.ecolsys.110308.120159?casa_token=ZCcYcz4kym4AAAAA:PPSNWmUn0wy2Ieu6nVwpzX37f-67fnkVMMxfAUk74Peu01XafOnSf-SF0VuCL24WMwDu4koUzR2wFyg) paper is a good start.
+
+SDMs are used for a range of purposes, not limited to understanding drivers of species distributions, conservation planning and risk forecasting. This tutorial is likely to be challenging for a beginner in spatial analysis, but is designed to try to balance thoroughness with simplicity. 
+
+Our overall goal is to produce a prediction map of the most suitable habitat for a species of interest and to better understand the environmental drivers behind its current distribution. Along the way, we will carefully process our data to make sure we have the best inputs and then provide a model evaluation procedure to determine how robust our findings are.
 
 ### Tutorial
 
-```{r}
+We will be using two new-ish R packages for running species distribution models: `flexSDM` and `SDMtune`. These packages have several features, which are useful in processing and modeling our SDM data. We will then use `blockCV` to create a spatial blocking space to improve the robustness of our findings. Most of the other packages, you should be familiar with by now.
+
+```{r, message = FALSE, warning=FALSE}
 #### Install.packages ----
 # install.packages('raster')
 # install.packages('remotes')
@@ -42,6 +61,12 @@ library(patchwork) # combine ggplots
 
 #### Load in data
 
+We will be using the Protea roupelliae locality data that we used in the **Making a map** tutorial. This data has already been processed and cleaned to remove spurious locations. 
+
+We will download data for all countries that overlap with the species localities and then merge these together to make a single country boundary.
+
+Lastly we will be using the WorldClim data as our environmental covariates. This can be downloaded using the `raster` package or loaded in directly from file. 
+
 ```{r}
 #### Load in data ----
 # Read species data 
@@ -57,6 +82,8 @@ sern_a %>% group_by(level) %>% summarise() %>% vect() -> sern_a_dissolve
 r <- rast("data/sdm/worldclim.tif")
 ```
 
+Let's plot out our species and area of interest. For some reason, a few border lines remain in our country border file - this won't impact our modeling going forward.
+
 ```{r}
 #### Visualise raw data ----
 plot(r[[1]])
@@ -64,12 +91,16 @@ plot(sern_a_dissolve, add = T)
 plot(protea, add=T)
 ```
 
+Again, we would like to exclude Marion Island, so crop the country boundary data to a reasonable extent.
+
 ```{r}
 #### Edit extent of Sern A vector 
 plot(sern_a_dissolve)
 sern_a_dissolve <- crop(sern_a_dissolve, ext(15, 33, -35, -20))
 plot(sern_a_dissolve)
 ```
+
+Check and fix the projections.
 
 ```{r}
 #### Check projections ----
