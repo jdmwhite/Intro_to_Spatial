@@ -88,7 +88,9 @@ covariates[[3:4]] <- covariates[[3:4]]/100
 # Using Pearson correlation
 cov_colin <- correct_colinvar(covariates, method = c('pearson', th = "0.7"))
 # Take a look at the correlations using corrplot
+pdf('output/figs/SDM/corr_plot.pdf', width = 8, height = 6)
 corrplot(cov_colin$cor_table, tl.cex = 0.6)
+dev.off()
 
 # Show which variables are correlated
 cov_colin$cor_variables
@@ -137,7 +139,8 @@ spat_range <- spatialAutoRange(
   speciesData = st_as_sf(protea_filt_pres, coords = c('lon','lat'), crs = crs(cov_clean)),
   doParallel = TRUE,
   showPlots = TRUE)
-# This suggest ~110km as an appropriate size for our blocks
+
+# This suggests ~120km as an appropriate size for our blocks
 
 # We can now create our spatial folds (k) for later cross-validation
 # set the random seed, so this the output is the same across machines
@@ -146,10 +149,13 @@ spat_blocks1 <- spatialBlock(
   species = "pr_ab",
   rasterLayer = raster::raster(cov_clean),
   k = 4,
-  theRange = 110469,
+  theRange = spat_range$range,
   border = st_as_sf(aoi),
   seed = 101
 )
+
+ggsave('output/figs/SDM/spatial_block.png',
+       width = 6, height = 5, dpi = 'retina', bg = 'white')
 
 # Assign the folds (or partitions) back onto the presence dataset
 protea_filt_pres$folds <- spat_blocks1$foldID
@@ -191,10 +197,14 @@ pa %>% group_by(folds) %>% count() == protea_filt_pres %>% group_by(folds) %>% c
 
 #### Let's plot the presences and pseudo-absences and view which folds they fall into
 ggplot() +
-  geom_sf(data = st_as_sf(aoi)) +
+  geom_sf(data = st_as_sf(aoi), fill = NA) +
   geom_sf(data = st_as_sf(spat_blocks1$blocks)) +
   geom_point(data = rbind(protea_filt_pres, pa), aes(x = lon, y = lat, col = as.factor(folds), pch = as.factor(pr_ab))) +
+  labs(colour = 'Folds', shape = 'Presence/\nPseudo-absence') +
   theme_void()
+
+ggsave('output/figs/SDM/folds_and_points.png',
+       width = 6, height = 5, dpi = 'retina', bg = 'white')
 
 #### Extract covariate values ----
 # Prepare a SWD (Sample with Data), which is a class of data specifically used in the SDMtune package
@@ -214,9 +224,10 @@ SWDdata@data <- SWDdata@data[-1]
 ###___________________________###
 # RandomForest with random folds
 ###___________________________###
-rand_folds <- randomFolds(SWDdata, k = 4, only_presence = TRUE, seed = 25)
+rand_folds <- randomFolds(SWDdata, k = 4, only_presence = TRUE, seed = 1)
 
 # Run a RandomForest model with default setting and random folds
+set.seed(1)
 rf_randcv <- train(method = 'RF', data = SWDdata, folds = rand_folds)
 # Check the overall AUC and TSS values
 paste0('Testing AUC: ', round(SDMtune::auc(rf_randcv, test = TRUE),2))
@@ -242,6 +253,7 @@ spat_blocks2$folds
 # also, as you can see from the console output, the training/testing split is approximately 70% training, 30% testing
 
 # Run a RandomForest model with default setting and spatial folds
+set.seed(1)
 rf_sbcv <- train(method = 'RF', data = SWDdata, folds = spat_blocks2)
 # Check the overall AUC and TSS values
 paste0('Testing AUC: ', round(SDMtune::auc(rf_sbcv, test = TRUE),2))
@@ -260,11 +272,15 @@ ggplot(data = spec_sens_vals) +
   scale_colour_viridis_d(name = 'Model no. & AUC',
                          labels = auc_vals$label) +
   labs(x = 'False Positive Rate', y = 'True Positive Rate') +
+  geom_text(aes(x = 0.15, y = 0.95), label = paste0('Overall testing AUC: ', round(SDMtune::auc(rf_sbcv, test = TRUE),2)), size = 3) +
   theme_bw() +
   theme(panel.grid = element_blank(),
         legend.position = c(0.8, 0.25),
         legend.title = element_text(size = 8),
         legend.text = element_text(size = 7))
+
+ggsave('output/figs/SDM/rf_sbcv_auc_plot.png',
+       width = 6, height = 5, dpi = 'retina', bg = 'white')
 
 #### Variable importance ----
 # VI for the random fold RF model
@@ -275,9 +291,15 @@ plotVarImp(vi_rf_randcv)
 vi_rf_sbcv <- varImp(rf_sbcv)
 plotVarImp(vi_rf_sbcv)
 
+ggsave('output/figs/SDM/rf_sbcv_vi.png',
+       width = 6, height = 5, dpi = 'retina', bg = 'white')
+
 #### Response curves ----
 plotResponse(rf_sbcv, var = "ann_p", marginal = TRUE, rug = TRUE) + labs(x = 'Ann. precip.') +
 plotResponse(rf_sbcv, var = "max_t_warm_m", marginal = TRUE, rug = TRUE) + labs(x = 'Max. temp. warmest month')
+
+ggsave('output/figs/SDM/rf_sbcv_response_curves.png',
+       width = 8, height = 4, dpi = 'retina', bg = 'white')
 
 #### Model prediction ----
 # We can now predict which areas appear most suitable to our target species across our full area of interest using  predict() and our environmental layers
@@ -302,5 +324,8 @@ ggplot() +
        col = 'Habitat\nsuitability',
        x = 'Longitude', y = 'Latitude') +
   theme_minimal() 
+
+ggsave('output/figs/SDM/rf_sbcv_hab_suit.png',
+       width = 6, height = 6, dpi = 'retina', bg = 'white')
 
 #### END ####
