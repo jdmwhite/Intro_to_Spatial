@@ -144,11 +144,13 @@ spat_range <- spatialAutoRange(
 
 # We can now create our spatial folds (k) for later cross-validation
 # set the random seed, so this the output is the same across machines
+k = 4
+
 spat_blocks1 <- spatialBlock(
   speciesData = st_as_sf(protea_filt_pres, coords = c('lon','lat'), crs = crs(cov_clean)),
   species = "pr_ab",
   rasterLayer = raster::raster(cov_clean),
-  k = 4,
+  k = k,
   theRange = spat_range$range,
   border = st_as_sf(aoi),
   seed = 101
@@ -173,7 +175,7 @@ plot(grid_env)
 # We can now create our pseudo-absences and make sure they are evenly spaced across each of our fold grids, based on the number of presence points we have in each fold
 # We can also make sure that they are placed away from our presence points by a environmental or distance buffer - here we use a 20 km distance buffer
 # pseudo-absences
-pa <- lapply(1:4, function(x) {
+pa <- lapply(1:k, function(x) {
   sample_pseudoabs(
   data = protea_filt_pres,
   x = 'lon',
@@ -243,7 +245,7 @@ spat_blocks2 <- spatialBlock(speciesData = st_as_sf(bind_rows(protea_filt_pres, 
                    species = "pr_ab",
                    rasterLayer = raster::raster(cov_clean)[[1]], 
                    selection = 'predefined',
-                   k = 4,
+                   k = k,
                    blocks = spat_blocks1$blocks,
                    foldsCol = "folds",
                    seed = 101) 

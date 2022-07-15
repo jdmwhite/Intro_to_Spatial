@@ -114,6 +114,8 @@ crs(r) == crs(protea)
 
 #### Calibration area
 
+It is really important to only predict our habitat suitability to a region where the species could feasibly occur. So instead of using the whole of southern Africa, we will limit this to a calibration area around our species localities within a 150km buffer zone.
+
 ```{r}
 #### Calibration area ----
 # Create a 150km buffer around our species points to create a prediction region
@@ -128,6 +130,8 @@ plot(ca_protea)
 plot(protea, add = TRUE)
 ```
 
+We can then clean this up to only be focused on the countries where this species occurs:
+
 ```{r}
 # Intersect this with our country boundary to remove areas in the ocean
 aoi <- terra::intersect(ca_protea, sern_a_dissolve)
@@ -138,12 +142,16 @@ plot(protea, add = TRUE)
 
 #### Process the covariate data
 
+There are a few steps we need to take to clean up our worldclim data. First we crop and mask the covariates to our area of interest. 
+
 ```{r}
 # Mask the covariates to the area of interest
 covariates <- mask(crop(r, aoi), aoi)
 plot(covariates[[1]])
 plot(aoi, add = TRUE)
 ```
+
+We then rename the bands to more sensible, readable names.
 
 ```{r}
 # rename the worldclim bands to more reasonable names
@@ -152,6 +160,8 @@ names(covariates) <- c("mean_ann_t","mean_diurnal_t_range","isothermality", "t_s
 names(covariates)
 ```
 
+Rasters are often stored with a scaling factor to save on file size. For the temperature data, we will need to rescale these back to their original values.
+
 ```{r}
 # Re-scale temperature values
 covariates[[c(1:2,5:11)]] <- covariates[[c(1:2,5:11)]]/10
@@ -159,6 +169,8 @@ covariates[[3:4]] <- covariates[[3:4]]/100
 ```
 
 #### Check for colinearity
+
+Of these 19 different bioclimatic variables, several of them provide us with very similar, redundant information. To avoid this, we can check for collinearity above a certain threshold (0.7 is commonly used).
 
 ```{r}
 # Using Pearson correlation
@@ -174,6 +186,8 @@ dev.off()
 cov_colin$cor_variables
 ```
 
+We can then select a subset of variables that we will use going forward. Don't forget though, that the other removed variables that are correlated to our selected variables could also likely play an important role in determining the suitability range of our species.
+
 ```{r}
 # Select the subset we want
 selected_vars <- c('min_t_cold_m', 'max_t_warm_m','isothermality','ann_p','p_seas')
@@ -184,6 +198,8 @@ cov_clean
 ```
 
 #### Presence filtering
+
+We can now work on our presence data. To avoid areas that may be over-sampled with highly clustered points that may create bias in our model output, we can run a **thinning** function. In this case, we will use a function `flexSDM::occfilt_env()` to avoid points with overly similar environmental covariate values. This will remove several locality records, but leave us with better data overall.
 
 ```{r}
 # select only the lon/lat and provide a unique ID to each row
@@ -209,6 +225,8 @@ points(occ_filt_10bin[,2:3], pch = 19, cex = 0.3, col = 'red')
 # most of the filtering is happening where the points are spatially clustered...
 ```
 
+Save these to a new data frame and then assign a value to indicate these are presence points (i.e. 1).
+
 ```{r}
 # Save the 10 bin environmental filtering
 protea_filt_pres <- occ_filt_10bin[,2:3]
@@ -219,26 +237,33 @@ protea_filt_pres$pr_ab <- 1
 
 #### Spatial block cross-validation
 
+We now want to partition our data into different spatial blocks or "folds" to avoid spatial autocorrelation. This set of function will help to create spatially similar groups. When we later run our models, we will then be able to see if our models can predict to areas with spatially dissimilar values. This is an important step in any model that has a spatial element to it.
+
+First, run the `blockCV::spatialAutoRange()` to find what the recommended size of our spatial blocks should be. This is based on the similarity in values across each environmental covariate. 
+
 ```{r}
-# We now want to partition our data into different spatial blocks or "folds" to avoid spatial autocorrelation
 # find the range value of block sizes by fitting variograms to each environmental raster to find the effective range of spatial autocorrelation
 spat_range <- spatialAutoRange(
   rasterLayer = raster::raster(cov_clean),
   speciesData = st_as_sf(protea_filt_pres, coords = c('lon','lat'), crs = crs(cov_clean)),
   doParallel = TRUE,
   showPlots = TRUE)
-# This suggest ~110km as an appropriate size for our blocks
+# This suggest ~120km as an appropriate size for our blocks
 ```
+
+This suggests a value of approximately 120 km as an appropriate size for our spatial blocks. We can now assign these blocks to k different spatial folds. In this case, we chose k = 4 folds as we have a limited amount of locality points. 
 
 ```{r}
 # We can now create our spatial folds (k) for later cross-validation
 # set the random seed, so this the output is the same across machines
+k = 4
+
 spat_blocks1 <- spatialBlock(
   speciesData = st_as_sf(protea_filt_pres, coords = c('lon','lat'), crs = crs(cov_clean)),
   species = "pr_ab",
   rasterLayer = raster::raster(cov_clean),
-  k = 4,
-  theRange = 110469,
+  k = k,
+  theRange = spat_range$range,
   border = st_as_sf(aoi),
   seed = 101
 )
@@ -249,6 +274,7 @@ ggsave('output/figs/SDM/spatial_block.png',
        width = 6, height = 5, dpi = 'retina', bg = 'white')
 ```
 
+We can now assign the fold IDs back onto our species presence data frame. 
 
 ```{r}
 # Assign the folds (or partitions) back onto the presence dataset
@@ -257,10 +283,14 @@ protea_filt_pres$folds <- spat_blocks1$foldID
 head(protea_filt_pres)
 ```
 
+Check to see how many presences are found within each spatial fold:
+
 ```{r}
 # count the number of presences in each fold
 protea_filt_pres %>% group_by(folds) %>% count()
 ```
+
+Conver the spatial blocks to a raster, so that we can later extract this for our pseudo-absence data.
 
 ```{r}
 # Rasterize the blocks
@@ -270,11 +300,17 @@ plot(grid_env)
 
 #### Create pseudo-absences
 
+The creating of pseudo-absence or background points is a crucial step in many SDMs. Most SDMs require both presence (1) and absence (0) data to properly evaluate the model accuracy. However, most species data is presence-only. The way around this is to create artifical points, which could replicate the effect of having absence points. These are called **pseudo-absences**. There is a lot of debate on the best approach for the producing these pseudo-absences as they can have a major impact on our overall model predictions and evaluation. Read more about this [here](https://www.biorxiv.org/content/10.1101/2022.03.24.485693v1.full).
+
+Pseudo-absences can be create randomly, in a equal or proportionally-stratified manner or several other ways. Here we will use a proportionally-stratified approach and make sure that each spatial fold has the same number of both presences and absences by looping over each iteration of our spatial folds (1:k). 
+
+Additionally, we impose a buffer on our pseudo-absence points ot make sure they are at least 20 km away from our presence points. We could alternatively use an environmental buffer, where the pseudo-absence points are placed in sites with a strong environmental dissimilarity from our presence points. Try out the alternative approach in your own time. 
+
 ```{r}
 # We can now create our pseudo-absences and make sure they are evenly spaced across each of our fold grids, based on the number of presence points we have in each fold
 # We can also make sure that they are placed away from our presence points by a environmental or distance buffer - here we use a 20 km distance buffer
 # pseudo-absences
-pa <- lapply(1:4, function(x) {
+pa <- lapply(1:k, function(x) {
   sample_pseudoabs(
   data = protea_filt_pres,
   x = 'lon',
@@ -290,16 +326,22 @@ pa <- lapply(1:4, function(x) {
 }) %>% bind_rows() 
 ```
 
+We then extract the value of each fold for our pseudo-absence points using our rasterized spatial folds. 
+
 ```{r}
 # Extract the partition number for each pseudo-absence point
 pa <- sdm_extract(data = pa, x = "lon", y = "lat", env_layer = grid_env)
 head(pa)
 ```
 
+Check to see if we have the same number of presence and pseudo-absence points in each fold:
+
 ```{r}
 # Count the number of pseudo-absence & presence points in each fold and see if they are equal
 pa %>% group_by(folds) %>% count() == protea_filt_pres %>% group_by(folds) %>% count()
 ```
+
+We can now plot this out to see what it looks like in space. Notice that the environmentally similar blocks may be found on opposite sides of our area of interest. This is likely due to the simple nature of our environmental covariates. If we included different coviarates, we would get a very different spatial block pattern.
 
 ```{r}
 #### Let's plot the presences and pseudo-absences and view which folds they fall into
@@ -316,8 +358,9 @@ ggsave('output/figs/SDM/folds_and_points.png',
        width = 6, height = 5, dpi = 'retina', bg = 'white')
 ```
 
-
 #### Extract covariate values for each point
+
+In most SDM workflows, we could now extract the covariate data for each point using a function like `terra::extract()`. To see this in action, take a look at Tutorial 1 in the Extras Tab. However, the `SDMtune` package has specialised data structure called SWD (Sample with Data), which we will make use of. This is designed to specifically work together with the `train()` function that we will use when building our random forest.
 
 ```{r}
 # Prepare a SWD (Sample with Data), which is a class of data specifically used in the SDMtune package
@@ -327,13 +370,20 @@ SWDdata <- prepareSWD(
   a = pa[,1:2],
   env = cov_clean
 )
-head(SWDdata@data)
 
 # For some reason ID is included, so we need to remove this...
 SWDdata@data <- SWDdata@data[-1]
+
+head(SWDdata@data)
 ```
 
 #### Fit the model
+
+We have now thoroughly processed our species and covariate data and we are finally ready to fit our models.
+
+We will run two different types of models. First one using random folds (i.e. no spatial component) and secondly one based on our spatial folds. 
+
+For both sets of models, we will use the default settings for a random forest. Many modeling exercises may suggest hyper-parameter tuning, which means trying out several iterations of the settings until finding the best settings for our data. Read up more on how to implement this in [SDMtune](https://consbiol-unibern.github.io/SDMtune/articles/articles/tune-hyperparameters.html).
 
 #### RandomForest with random folds
 
@@ -361,7 +411,7 @@ spat_blocks2 <- spatialBlock(speciesData = st_as_sf(bind_rows(protea_filt_pres, 
                    species = "pr_ab",
                    rasterLayer = raster::raster(cov_clean)[[1]], 
                    selection = 'predefined',
-                   k = 4,
+                   k = k,
                    blocks = spat_blocks1$blocks,
                    foldsCol = "folds",
                    seed = 101) 

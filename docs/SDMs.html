@@ -363,12 +363,52 @@ div.tocify {
 practical.</p>
 <div id="learning-objectives" class="section level3">
 <h3>Learning objectives</h3>
+<ol style="list-style-type: decimal">
+<li>Define a calibration area</li>
+<li>Process environmental covariate data</li>
+<li>Process species presence data</li>
+<li>Create pseudo-absence species points</li>
+<li>Account for spatial autocorrelation with spatial blocks</li>
+<li>Fit a random forest model</li>
+<li>Estimate model accuracy</li>
+<li>Determine variable importance</li>
+<li>Visualise variable response curves</li>
+<li>Produce a habitat suitability prediction</li>
+</ol>
 </div>
 <div id="introduction" class="section level3">
 <h3>Introduction</h3>
+<p>Species Distribution models (SDMs, also called habitat suitability
+models or ecological niche models, depending on the goal) involves the
+identification of areas of likely species occurrence by learning a
+relationship between known occurrences and environmental variables
+(covariates). The ‘learning’ of species-environment relationships is
+accomplished by machine learning algorithms. For this short course, the
+inner-workings of these algorithms are beyond the scope of our available
+time. There are many papers describing SDMs, but if you are new to the
+field, this <a
+href="https://www.annualreviews.org/doi/abs/10.1146/annurev.ecolsys.110308.120159?casa_token=ZCcYcz4kym4AAAAA:PPSNWmUn0wy2Ieu6nVwpzX37f-67fnkVMMxfAUk74Peu01XafOnSf-SF0VuCL24WMwDu4koUzR2wFyg">Elith
+&amp; Leathwick 2009</a> paper is a good start.</p>
+<p>SDMs are used for a range of purposes, not limited to understanding
+drivers of species distributions, conservation planning and risk
+forecasting. This tutorial is likely to be challenging for a beginner in
+spatial analysis, but is designed to try to balance thoroughness with
+simplicity.</p>
+<p>Our overall goal is to produce a prediction map of the most suitable
+habitat for a species of interest and to better understand the
+environmental drivers behind its current distribution. Along the way, we
+will carefully process our data to make sure we have the best inputs and
+then provide a model evaluation procedure to determine how robust our
+findings are.</p>
 </div>
 <div id="tutorial" class="section level3">
 <h3>Tutorial</h3>
+<p>We will be using two new-ish R packages for running species
+distribution models: <code>flexSDM</code> and <code>SDMtune</code>.
+These packages have several features, which are useful in processing and
+modeling our SDM data. We will then use <code>blockCV</code> to create a
+spatial blocking space to improve the robustness of our findings. Most
+of the other packages, you should be familiar with by now.</p>
 <pre class="r"><code>#### Install.packages ----
 # install.packages(&#39;raster&#39;)
 # install.packages(&#39;remotes&#39;)
@@ -379,44 +419,26 @@ practical.</p>
 # install.packages(&#39;SDMtune&#39;)
 
 #### Load libraries ----
-library(terra) # raster manipulation</code></pre>
-<pre><code>## terra 1.5.21</code></pre>
-<pre class="r"><code>library(rnaturalearth) # country boundaries
-library(tidyverse) # data manipulation and plotting</code></pre>
-<pre><code>## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──</code></pre>
-<pre><code>## ✔ ggplot2 3.3.6     ✔ purrr   0.3.4
-## ✔ tibble  3.1.7     ✔ dplyr   1.0.9
-## ✔ tidyr   1.2.0     ✔ stringr 1.4.0
-## ✔ readr   2.1.2     ✔ forcats 0.5.1</code></pre>
-<pre><code>## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-## ✖ ggplot2::arrow() masks terra::arrow()
-## ✖ tidyr::extract() masks terra::extract()
-## ✖ dplyr::filter()  masks stats::filter()
-## ✖ dplyr::lag()     masks stats::lag()
-## ✖ dplyr::src()     masks terra::src()</code></pre>
-<pre class="r"><code>library(corrplot) # correlation plots</code></pre>
-<pre><code>## corrplot 0.92 loaded</code></pre>
-<pre class="r"><code>library(blockCV) # spatial block for cross-validation
-library(sf) # vector manipulation</code></pre>
-<pre><code>## Linking to GEOS 3.10.2, GDAL 3.4.2, PROJ 8.2.1; sf_use_s2() is TRUE</code></pre>
-<pre class="r"><code>library(flexsdm) # SDM package
-library(SDMtune) # SDM package</code></pre>
-<pre><code>## 
-##    _____  ____   __  ___ __
-##   / ___/ / __ \ /  |/  // /_ __  __ ____   ___
-##   \__ \ / / / // /|_/ // __// / / // __ \ / _ \
-##  ___/ // /_/ // /  / // /_ / /_/ // / / //  __/
-## /____//_____//_/  /_/ \__/ \__,_//_/ /_/ \___/  version 1.1.5
-## 
-## To cite this package in publications type: citation(&quot;SDMtune&quot;).</code></pre>
-<pre class="r"><code>library(patchwork) # combine ggplots</code></pre>
-<pre><code>## 
-## Attaching package: &#39;patchwork&#39;</code></pre>
-<pre><code>## The following object is masked from &#39;package:terra&#39;:
-## 
-##     area</code></pre>
+library(terra) # raster manipulation
+library(rnaturalearth) # country boundaries
+library(tidyverse) # data manipulation and plotting
+library(corrplot) # correlation plots
+library(blockCV) # spatial block for cross-validation
+library(sf) # vector manipulation
+library(flexsdm) # SDM package
+library(SDMtune) # SDM package
+library(patchwork) # combine ggplots</code></pre>
 <div id="load-in-data" class="section level4">
 <h4>Load in data</h4>
+<p>We will be using the Protea roupelliae locality data that we used in
+the <strong>Making a map</strong> tutorial. This data has already been
+processed and cleaned to remove spurious locations.</p>
+<p>We will download data for all countries that overlap with the species
+localities and then merge these together to make a single country
+boundary.</p>
+<p>Lastly we will be using the WorldClim data as our environmental
+covariates. This can be downloaded using the <code>raster</code> package
+or loaded in directly from file.</p>
 <pre class="r"><code>#### Load in data ----
 # Read species data 
 protea &lt;- vect(&quot;output/files/making_a_map/p_roup_gbif.shp&quot;)
@@ -429,17 +451,23 @@ sern_a %&gt;% group_by(level) %&gt;% summarise() %&gt;% vect() -&gt; sern_a_diss
 # returns 19 variables
 # or alternatively load from disk
 r &lt;- rast(&quot;data/sdm/worldclim.tif&quot;)</code></pre>
+<p>Let’s plot out our species and area of interest. For some reason, a
+few border lines remain in our country border file - this won’t impact
+our modeling going forward.</p>
 <pre class="r"><code>#### Visualise raw data ----
 plot(r[[1]])
 plot(sern_a_dissolve, add = T)
 plot(protea, add=T)</code></pre>
 <p><img src="SDMs_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>Again, we would like to exclude Marion Island, so crop the country
+boundary data to a reasonable extent.</p>
 <pre class="r"><code>#### Edit extent of Sern A vector 
 plot(sern_a_dissolve)</code></pre>
 <p><img src="SDMs_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <pre class="r"><code>sern_a_dissolve &lt;- crop(sern_a_dissolve, ext(15, 33, -35, -20))
 plot(sern_a_dissolve)</code></pre>
 <p><img src="SDMs_files/figure-html/unnamed-chunk-4-2.png" width="672" /></p>
+<p>Check and fix the projections.</p>
 <pre class="r"><code>#### Check projections ----
 crs(r) == crs(protea)</code></pre>
 <pre><code>## [1] TRUE</code></pre>
@@ -454,6 +482,10 @@ crs(r) == crs(sern_a_dissolve)</code></pre>
 </div>
 <div id="calibration-area" class="section level4">
 <h4>Calibration area</h4>
+<p>It is really important to only predict our habitat suitability to a
+region where the species could feasibly occur. So instead of using the
+whole of southern Africa, we will limit this to a calibration area
+around our species localities within a 150km buffer zone.</p>
 <pre class="r"><code>#### Calibration area ----
 # Create a 150km buffer around our species points to create a prediction region
 ca_protea &lt;- calib_area(data = as.data.frame(protea),
@@ -466,6 +498,8 @@ par(mfrow = c(1,1))
 plot(ca_protea)
 plot(protea, add = TRUE)</code></pre>
 <p><img src="SDMs_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p>We can then clean this up to only be focused on the countries where
+this species occurs:</p>
 <pre class="r"><code># Intersect this with our country boundary to remove areas in the ocean
 aoi &lt;- terra::intersect(ca_protea, sern_a_dissolve)
 plot(ca_protea)
@@ -475,11 +509,14 @@ plot(protea, add = TRUE)</code></pre>
 </div>
 <div id="process-the-covariate-data" class="section level4">
 <h4>Process the covariate data</h4>
+<p>There are a few steps we need to take to clean up our worldclim data.
+First we crop and mask the covariates to our area of interest.</p>
 <pre class="r"><code># Mask the covariates to the area of interest
 covariates &lt;- mask(crop(r, aoi), aoi)
 plot(covariates[[1]])
 plot(aoi, add = TRUE)</code></pre>
 <p><img src="SDMs_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p>We then rename the bands to more sensible, readable names.</p>
 <pre class="r"><code># rename the worldclim bands to more reasonable names
 names(covariates)</code></pre>
 <pre><code>##  [1] &quot;bio1&quot;  &quot;bio2&quot;  &quot;bio3&quot;  &quot;bio4&quot;  &quot;bio5&quot;  &quot;bio6&quot;  &quot;bio7&quot;  &quot;bio8&quot;  &quot;bio9&quot; 
@@ -494,12 +531,18 @@ names(covariates)</code></pre>
 ## [13] &quot;p_wet_m&quot;              &quot;p_dry_m&quot;              &quot;p_seas&quot;              
 ## [16] &quot;p_wet_q&quot;              &quot;p_dry_q&quot;              &quot;p_warm_q&quot;            
 ## [19] &quot;p_cold_q&quot;</code></pre>
+<p>Rasters are often stored with a scaling factor to save on file size.
+For the temperature data, we will need to rescale these back to their
+original values.</p>
 <pre class="r"><code># Re-scale temperature values
 covariates[[c(1:2,5:11)]] &lt;- covariates[[c(1:2,5:11)]]/10
 covariates[[3:4]] &lt;- covariates[[3:4]]/100</code></pre>
 </div>
 <div id="check-for-colinearity" class="section level4">
 <h4>Check for colinearity</h4>
+<p>Of these 19 different bioclimatic variables, several of them provide
+us with very similar, redundant information. To avoid this, we can check
+for collinearity above a certain threshold (0.7 is commonly used).</p>
 <pre class="r"><code># Using Pearson correlation
 cov_colin &lt;- correct_colinvar(covariates, method = c(&#39;pearson&#39;, th = &quot;0.7&quot;))
 # Take a look at the correlations using corrplot
@@ -576,6 +619,10 @@ cov_colin$cor_variables</code></pre>
 ## $p_cold_q
 ## [1] &quot;mean_diurnal_t_range&quot; &quot;ann_p&quot;                &quot;p_dry_m&quot;             
 ## [4] &quot;p_seas&quot;               &quot;p_dry_q&quot;</code></pre>
+<p>We can then select a subset of variables that we will use going
+forward. Don’t forget though, that the other removed variables that are
+correlated to our selected variables could also likely play an important
+role in determining the suitability range of our species.</p>
 <pre class="r"><code># Select the subset we want
 selected_vars &lt;- c(&#39;min_t_cold_m&#39;, &#39;max_t_warm_m&#39;,&#39;isothermality&#39;,&#39;ann_p&#39;,&#39;p_seas&#39;)
 
@@ -597,6 +644,13 @@ cov_clean</code></pre>
 </div>
 <div id="presence-filtering" class="section level4">
 <h4>Presence filtering</h4>
+<p>We can now work on our presence data. To avoid areas that may be
+over-sampled with highly clustered points that may create bias in our
+model output, we can run a <strong>thinning</strong> function. In this
+case, we will use a function <code>flexSDM::occfilt_env()</code> to
+avoid points with overly similar environmental covariate values. This
+will remove several locality records, but leave us with better data
+overall.</p>
 <pre class="r"><code># select only the lon/lat and provide a unique ID to each row
 protea_df &lt;- as.data.frame(protea) %&gt;% select(lon, lat)
 protea_df$id &lt;- 1:nrow(protea_df)
@@ -622,6 +676,8 @@ points(protea_df, pch = 19, cex = 0.3);
 points(occ_filt_10bin[,2:3], pch = 19, cex = 0.3, col = &#39;red&#39;)</code></pre>
 <p><img src="SDMs_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
 <pre class="r"><code># most of the filtering is happening where the points are spatially clustered...</code></pre>
+<p>Save these to a new data frame and then assign a value to indicate
+these are presence points (i.e. 1).</p>
 <pre class="r"><code># Save the 10 bin environmental filtering
 protea_filt_pres &lt;- occ_filt_10bin[,2:3]
 
@@ -630,8 +686,16 @@ protea_filt_pres$pr_ab &lt;- 1</code></pre>
 </div>
 <div id="spatial-block-cross-validation" class="section level4">
 <h4>Spatial block cross-validation</h4>
-<pre class="r"><code># We now want to partition our data into different spatial blocks or &quot;folds&quot; to avoid spatial autocorrelation
-# find the range value of block sizes by fitting variograms to each environmental raster to find the effective range of spatial autocorrelation
+<p>We now want to partition our data into different spatial blocks or
+“folds” to avoid spatial autocorrelation. This set of function will help
+to create spatially similar groups. When we later run our models, we
+will then be able to see if our models can predict to areas with
+spatially dissimilar values. This is an important step in any model that
+has a spatial element to it.</p>
+<p>First, run the <code>blockCV::spatialAutoRange()</code> to find what
+the recommended size of our spatial blocks should be. This is based on
+the similarity in values across each environmental covariate.</p>
+<pre class="r"><code># find the range value of block sizes by fitting variograms to each environmental raster to find the effective range of spatial autocorrelation
 spat_range &lt;- spatialAutoRange(
   rasterLayer = raster::raster(cov_clean),
   speciesData = st_as_sf(protea_filt_pres, coords = c(&#39;lon&#39;,&#39;lat&#39;), crs = crs(cov_clean)),
@@ -639,26 +703,32 @@ spat_range &lt;- spatialAutoRange(
   showPlots = TRUE)</code></pre>
 <pre><code>## Loading required namespace: rgeos</code></pre>
 <p><img src="SDMs_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
-<pre class="r"><code># This suggest ~110km as an appropriate size for our blocks</code></pre>
+<pre class="r"><code># This suggest ~120km as an appropriate size for our blocks</code></pre>
+<p>This suggests a value of approximately 120 km as an appropriate size
+for our spatial blocks. We can now assign these blocks to k different
+spatial folds. In this case, we chose k = 4 folds as we have a limited
+amount of locality points.</p>
 <pre class="r"><code># We can now create our spatial folds (k) for later cross-validation
 # set the random seed, so this the output is the same across machines
+k = 4
+
 spat_blocks1 &lt;- spatialBlock(
   speciesData = st_as_sf(protea_filt_pres, coords = c(&#39;lon&#39;,&#39;lat&#39;), crs = crs(cov_clean)),
   species = &quot;pr_ab&quot;,
   rasterLayer = raster::raster(cov_clean),
-  k = 4,
-  theRange = 110469,
+  k = k,
+  theRange = spat_range$range,
   border = st_as_sf(aoi),
   seed = 101
 )</code></pre>
 <pre><code>## Warning: attribute variables are assumed to be spatially constant throughout all
 ## geometries</code></pre>
-<pre><code>## The best folds was in iteration 32:
+<pre><code>## The best folds was in iteration 55:
 ##   train_1 test_1
 ## 1      78     25
 ## 2      77     26
-## 3      77     26
-## 4      77     26</code></pre>
+## 3      79     24
+## 4      75     28</code></pre>
 <pre><code>## Warning: `guides(&lt;scale&gt; = FALSE)` is deprecated. Please use `guides(&lt;scale&gt; =
 ## &quot;none&quot;)` instead.</code></pre>
 <pre><code>## Warning in st_point_on_surface.sfc(sf::st_zm(x)): st_point_on_surface may not
@@ -668,6 +738,8 @@ spat_blocks1 &lt;- spatialBlock(
        width = 6, height = 5, dpi = &#39;retina&#39;, bg = &#39;white&#39;)</code></pre>
 <pre><code>## Warning in st_point_on_surface.sfc(sf::st_zm(x)): st_point_on_surface may not
 ## give correct results for longitude/latitude data</code></pre>
+<p>We can now assign the fold IDs back onto our species presence data
+frame.</p>
 <pre class="r"><code># Assign the folds (or partitions) back onto the presence dataset
 protea_filt_pres$folds &lt;- spat_blocks1$foldID
 # Each point is now assigned to 1 of 4 partitions
@@ -675,12 +747,14 @@ head(protea_filt_pres)</code></pre>
 <pre><code>## # A tibble: 6 × 4
 ##     lon   lat pr_ab folds
 ##   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt;
-## 1  28.7 -30.2     1     3
-## 2  28.2 -30.8     1     3
+## 1  28.7 -30.2     1     1
+## 2  28.2 -30.8     1     2
 ## 3  27.8 -26.1     1     3
-## 4  29.4 -29.6     1     2
-## 5  28.8 -30.4     1     3
-## 6  30.9 -24.7     1     4</code></pre>
+## 4  29.4 -29.6     1     4
+## 5  28.8 -30.4     1     1
+## 6  30.9 -24.7     1     2</code></pre>
+<p>Check to see how many presences are found within each spatial
+fold:</p>
 <pre class="r"><code># count the number of presences in each fold
 protea_filt_pres %&gt;% group_by(folds) %&gt;% count()</code></pre>
 <pre><code>## # A tibble: 4 × 2
@@ -689,8 +763,10 @@ protea_filt_pres %&gt;% group_by(folds) %&gt;% count()</code></pre>
 ##   &lt;int&gt; &lt;int&gt;
 ## 1     1    25
 ## 2     2    26
-## 3     3    26
-## 4     4    26</code></pre>
+## 3     3    24
+## 4     4    28</code></pre>
+<p>Conver the spatial blocks to a raster, so that we can later extract
+this for our pseudo-absence data.</p>
 <pre class="r"><code># Rasterize the blocks
 grid_env &lt;- rasterize(vect(spat_blocks1$blocks), cov_clean, field = &#39;folds&#39;)</code></pre>
 <pre><code>## Warning: [vect] argument &#39;crs&#39; should be a character value</code></pre>
@@ -699,10 +775,31 @@ grid_env &lt;- rasterize(vect(spat_blocks1$blocks), cov_clean, field = &#39;fold
 </div>
 <div id="create-pseudo-absences" class="section level4">
 <h4>Create pseudo-absences</h4>
+<p>The creating of pseudo-absence or background points is a crucial step
+in many SDMs. Most SDMs require both presence (1) and absence (0) data
+to properly evaluate the model accuracy. However, most species data is
+presence-only. The way around this is to create artifical points, which
+could replicate the effect of having absence points. These are called
+<strong>pseudo-absences</strong>. There is a lot of debate on the best
+approach for the producing these pseudo-absences as they can have a
+major impact on our overall model predictions and evaluation. Read more
+about this <a
+href="https://www.biorxiv.org/content/10.1101/2022.03.24.485693v1.full">here</a>.</p>
+<p>Pseudo-absences can be create randomly, in a equal or
+proportionally-stratified manner or several other ways. Here we will use
+a proportionally-stratified approach and make sure that each spatial
+fold has the same number of both presences and absences by looping over
+each iteration of our spatial folds (1:k).</p>
+<p>Additionally, we impose a buffer on our pseudo-absence points ot make
+sure they are at least 20 km away from our presence points. We could
+alternatively use an environmental buffer, where the pseudo-absence
+points are placed in sites with a strong environmental dissimilarity
+from our presence points. Try out the alternative approach in your own
+time.</p>
 <pre class="r"><code># We can now create our pseudo-absences and make sure they are evenly spaced across each of our fold grids, based on the number of presence points we have in each fold
 # We can also make sure that they are placed away from our presence points by a environmental or distance buffer - here we use a 20 km distance buffer
 # pseudo-absences
-pa &lt;- lapply(1:4, function(x) {
+pa &lt;- lapply(1:k, function(x) {
   sample_pseudoabs(
   data = protea_filt_pres,
   x = &#39;lon&#39;,
@@ -716,18 +813,22 @@ pa &lt;- lapply(1:4, function(x) {
   calibarea = aoi
 )
 }) %&gt;% bind_rows() </code></pre>
+<p>We then extract the value of each fold for our pseudo-absence points
+using our rasterized spatial folds.</p>
 <pre class="r"><code># Extract the partition number for each pseudo-absence point
 pa &lt;- sdm_extract(data = pa, x = &quot;lon&quot;, y = &quot;lat&quot;, env_layer = grid_env)
 head(pa)</code></pre>
 <pre><code>## # A tibble: 6 × 4
 ##     lon   lat pr_ab folds
 ##   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
-## 1  30.2 -30.6     0     1
-## 2  30.6 -30.3     0     1
-## 3  31.7 -26.5     0     1
-## 4  31.3 -26.4     0     1
-## 5  30.9 -26.5     0     1
-## 6  31.2 -27.4     0     1</code></pre>
+## 1  29.7 -25.0     0     1
+## 2  29.1 -31.7     0     1
+## 3  29.4 -30.8     0     1
+## 4  29.1 -31.6     0     1
+## 5  30.0 -25.9     0     1
+## 6  31.1 -29.2     0     1</code></pre>
+<p>Check to see if we have the same number of presence and
+pseudo-absence points in each fold:</p>
 <pre class="r"><code># Count the number of pseudo-absence &amp; presence points in each fold and see if they are equal
 pa %&gt;% group_by(folds) %&gt;% count() == protea_filt_pres %&gt;% group_by(folds) %&gt;% count()</code></pre>
 <pre><code>##      folds    n
@@ -735,6 +836,11 @@ pa %&gt;% group_by(folds) %&gt;% count() == protea_filt_pres %&gt;% group_by(fol
 ## [2,]  TRUE TRUE
 ## [3,]  TRUE TRUE
 ## [4,]  TRUE TRUE</code></pre>
+<p>We can now plot this out to see what it looks like in space. Notice
+that the environmentally similar blocks may be found on opposite sides
+of our area of interest. This is likely due to the simple nature of our
+environmental covariates. If we included different coviarates, we would
+get a very different spatial block pattern.</p>
 <pre class="r"><code>#### Let&#39;s plot the presences and pseudo-absences and view which folds they fall into
 ggplot() +
   geom_sf(data = st_as_sf(aoi), fill = NA) +
@@ -749,6 +855,13 @@ ggplot() +
 <div id="extract-covariate-values-for-each-point"
 class="section level4">
 <h4>Extract covariate values for each point</h4>
+<p>In most SDM workflows, we could now extract the covariate data for
+each point using a function like <code>terra::extract()</code>. To see
+this in action, take a look at Tutorial 1 in the Extras Tab. However,
+the <code>SDMtune</code> package has specialised data structure called
+SWD (Sample with Data), which we will make use of. This is designed to
+specifically work together with the <code>train()</code> function that
+we will use when building our random forest.</p>
 <pre class="r"><code># Prepare a SWD (Sample with Data), which is a class of data specifically used in the SDMtune package
 SWDdata &lt;- prepareSWD(
   species = &#39;Protea roupelliae&#39;,
@@ -758,19 +871,31 @@ SWDdata &lt;- prepareSWD(
 )</code></pre>
 <pre><code>## Extracting predictor information for presence locations...</code></pre>
 <pre><code>## Extracting predictor information for absence/background locations...</code></pre>
-<pre class="r"><code>head(SWDdata@data)</code></pre>
-<pre><code>##   ID min_t_cold_m max_t_warm_m isothermality ann_p p_seas
-## 1  1          0.9         24.8          0.55   743     69
-## 2  2         -1.1         24.3          0.53   767     59
-## 3  3          1.6         27.1          0.55   712     74
-## 4  4         -3.0         22.4          0.52  1031     75
-## 5  5          1.7         24.8          0.58   793     67
-## 6  6          5.1         24.3          0.64  1010     77</code></pre>
 <pre class="r"><code># For some reason ID is included, so we need to remove this...
-SWDdata@data &lt;- SWDdata@data[-1]</code></pre>
+SWDdata@data &lt;- SWDdata@data[-1]
+
+head(SWDdata@data)</code></pre>
+<pre><code>##   min_t_cold_m max_t_warm_m isothermality ann_p p_seas
+## 1          0.9         24.8          0.55   743     69
+## 2         -1.1         24.3          0.53   767     59
+## 3          1.6         27.1          0.55   712     74
+## 4         -3.0         22.4          0.52  1031     75
+## 5          1.7         24.8          0.58   793     67
+## 6          5.1         24.3          0.64  1010     77</code></pre>
 </div>
 <div id="fit-the-model" class="section level4">
 <h4>Fit the model</h4>
+<p>We have now thoroughly processed our species and covariate data and
+we are finally ready to fit our models.</p>
+<p>We will run two different types of models. First one using random
+folds (i.e. no spatial component) and secondly one based on our spatial
+folds.</p>
+<p>For both sets of models, we will use the default settings for a
+random forest. Many modeling exercises may suggest hyper-parameter
+tuning, which means trying out several iterations of the settings until
+finding the best settings for our data. Read up more on how to implement
+this in <a
+href="https://consbiol-unibern.github.io/SDMtune/articles/articles/tune-hyperparameters.html">SDMtune</a>.</p>
 </div>
 <div id="randomforest-with-random-folds" class="section level4">
 <h4>RandomForest with random folds</h4>
@@ -782,7 +907,7 @@ set.seed(1)
 rf_randcv &lt;- train(method = &#39;RF&#39;, data = SWDdata, folds = rand_folds)</code></pre>
 <pre class="r"><code># Check the overall AUC and TSS values
 paste0(&#39;Testing AUC: &#39;, round(SDMtune::auc(rf_randcv, test = TRUE),2))</code></pre>
-<pre><code>## [1] &quot;Testing AUC: 0.97&quot;</code></pre>
+<pre><code>## [1] &quot;Testing AUC: 0.96&quot;</code></pre>
 <pre class="r"><code>paste0(&#39;Testing TSS: &#39;, round(SDMtune::tss(rf_randcv, test = TRUE),2))</code></pre>
 <pre><code>## [1] &quot;Testing TSS: 0.84&quot;</code></pre>
 <div id="randomforest-with-spatial-folds" class="section level5">
@@ -793,15 +918,15 @@ spat_blocks2 &lt;- spatialBlock(speciesData = st_as_sf(bind_rows(protea_filt_pre
                    species = &quot;pr_ab&quot;,
                    rasterLayer = raster::raster(cov_clean)[[1]], 
                    selection = &#39;predefined&#39;,
-                   k = 4,
+                   k = k,
                    blocks = spat_blocks1$blocks,
                    foldsCol = &quot;folds&quot;,
                    seed = 101) </code></pre>
 <pre><code>##   train_0 train_1 test_0 test_1
 ## 1      78      78     25     25
 ## 2      77      77     26     26
-## 3      77      77     26     26
-## 4      77      77     26     26</code></pre>
+## 3      80      79     23     24
+## 4      74      75     29     28</code></pre>
 <pre><code>## Warning: `guides(&lt;scale&gt; = FALSE)` is deprecated. Please use `guides(&lt;scale&gt; =
 ## &quot;none&quot;)` instead.</code></pre>
 <pre><code>## Warning in st_point_on_surface.sfc(sf::st_zm(x)): st_point_on_surface may not
@@ -811,74 +936,74 @@ spat_blocks2 &lt;- spatialBlock(speciesData = st_as_sf(bind_rows(protea_filt_pre
 spat_blocks2$folds</code></pre>
 <pre><code>## [[1]]
 ## [[1]][[1]]
-##   [1] 199 190 189  36 184 192  24 205 200 194  56 203 204 193 195 188  74 134
-##  [19]  75 147  71 135 141  52 152 144  81  78  44 137 131 133 146 132 150  41
-##  [37] 182 183 181 187 186 206   6 198 197 196 169  15 166 179 164 177  37 172
-##  [55] 162 175 168 178  94  80  27  61  59  13  91  38  10  97  96   9  62  25
-##  [73]  51  55 165 163  90  66  58  76  23   3 171 180  11 176 157  77 185  98
-##  [91]  82 202 142 149  48  68 143 138 136 154 151  49  28 201 191 101  54  18
-## [109]  84  22  20  16   4  30  83 153  42   8  73  86  64  85 174 155  89  29
-## [127]  14 158 159  35   1   2  47 167   5  46  45 100  79 156 139  43 129 130
-## [145] 148   7 140 145  40 173 170 161 160  57  39 102
+##   [1] 130 154 146 137 141  36 140 133  74  56 134  24 132 202  71 201 179 186
+##  [19] 198  41 200 195  75  52 157 172  53 171 176  70 170  78 165  44 156 159
+##  [37]  81 164  94  80  10  12  61 131  19  31 145   6  59  99 173  11   3  82
+##  [55] 162  37  77  23 161 178  17  76 168 155  55  66 166 199  98 184 158 101
+##  [73]  28 163 175  93 160 174  92  48  68 169  32 177 167 205  49 182 196 135
+##  [91] 143 139  60 144 129  67 148 152 103  95  54  22  87 191 204   8   4  26
+## [109]  84  16 181  30  20  64 189  34  83  86  33 188 187 193 203  85 194  29
+## [127]  72  88 147  65  42 136 149  73 150  18 151 183  35  14 192  89 190 185
+## [145] 206   2 142 138  43   7  79 153 197  50 102 180
 ## 
 ## [[1]][[2]]
-##  [1] 111  53  12 112  31  70  19  99 107  69 118 108 124 116  17 123 106 109 128
-## [20] 122  60  67 119 120 110  95  93  92  26  34  32 125 103  87  33 115  63  21
-## [39] 126 127 113  88  65 114  72 104 105 117 121  50
+##  [1] 122  97 104 126  15 110 128 111 117 114  27 108   9  13  90  25 115  91  62
+## [20]  96  38  51  58  69 109  21 112 113  63 121 125 120 119 124   1  46  47 118
+## [39]   5  45 100  39 107 123 106  40  57 116 127 105
 ## 
 ## 
 ## [[2]]
 ## [[2]][[1]]
-##   [1] 199 190 189  36 184 192  24 205 200 194  56 203 204 193 195 188  74 111
-##  [19]  53  12 112  31  70  19  99 182 183 181 187 186 206   6 198 197 196 169
-##  [37]  15 166 179 164 177  37 172 162 175 168 178  94  80  27  61  59  13  91
-##  [55]  38  10  97  96   9  62  25  51  55 165 163  90  66  58  76  23   3 171
-##  [73] 180  11 176 157  77 185  98  82 202 107  69 118 108 124 116  17 123 106
-##  [91] 109 128 122  60  67 119 120 110  28 201 191 101  95  93  92  26  34  32
-## [109] 125 103  87  33 115  63  21 126 127 113  85 174 155  89  29  14 158 159
-## [127]  35   1   2  47 167   5  46  45 100  79 156  88  65 114  72 104 105 117
-## [145] 121  50  40 173 170 161 160  57  39 102
+##   [1] 202  71 201 179 186 198  41 200 195  75  52 157 172  53 171 176  70 170
+##  [19]  78 165  44 156 159  81 164 122  97 104 126  15 110 128 111 117 114 173
+##  [37]  11   3  82 162  37  77  27 108   9  13  90  25 115  91  62  96  38  51
+##  [55]  58  69  23 161 178  17  76 168 155  55  66 166 199  98 184 158 101  28
+##  [73] 163 175  93 160 174  92  48  68 169  32 177 167 205  49 182 196 103  95
+##  [91]  54  22  87 191 204   8   4  26  84  16 181  30  20  64 189  34  83  86
+## [109]  33 188 187 193 203  85 194  29 109  21 112 113  63 121 125 120 119 124
+## [127]   1  46  47 118   5  45 100 183  35  14 192  89 190 185 206  39 107 123
+## [145] 106  40  57 116 127 105 197  50 102 180
 ## 
 ## [[2]][[2]]
-##  [1] 134  75 147  71 135 141  52 152 144  81  78  44 137 131 133 146 132 150  41
-## [20] 142 149  48  68 143 138 136 154 151  49  54  18  84  22  20  16   4  30  83
-## [39] 153  42   8  73  86  64 139  43 129 130 148   7 140 145
+##  [1] 130 154 146 137 141  36 140 133  74  56 134  24 132  94  80  10  12  61 131
+## [20]  19  31 145   6  59  99 135 143 139  60 144 129  67 148 152  72  88 147  65
+## [39]  42 136 149  73 150  18 151   2 142 138  43   7  79 153
 ## 
 ## 
 ## [[3]]
 ## [[3]][[1]]
-##   [1] 199 190 189  36 184 192  24 205 200 194  56 203 204 193 195 188  74 134
-##  [19]  75 147  71 135 141  52 152 144  81  78  44 137 131 133 146 132 150  41
-##  [37] 111  53  12 112  31  70  19  99 182 183 181 187 186 206   6 198 197 196
-##  [55]  94  80  27  61  59  13  91  38  10  97  96   9  62  25  51 185  98  82
-##  [73] 202 107  69 118 108 124 116  17 123 106 142 149  48  68 143 138 136 154
-##  [91] 151  49 109 128 122  60  67 119 120 110  28 201 191 101  95  93  92  26
-## [109]  34  32 125 103  87  33 115  63  21 126 127 113  54  18  84  22  20  16
-## [127]   4  30  83 153  42   8  73  86  64  88  65 114  72 104 105 117 121  50
-## [145] 139  43 129 130 148   7 140 145  39 102
+##   [1] 130 154 146 137 141  36 140 133  74  56 134  24 132 202  71 201 179 186
+##  [19] 198  41 200 195 122  97 104 126  94  80  10  12  61 131  19  31 145   6
+##  [37]  59  99  15 110 128 111 117 114  27 108   9  13  90  25 115  91  62  96
+##  [55]  38  51  58  69 199  98 184 158 205  49 182 196 135 143 139  60 144 129
+##  [73]  67 148 152 103  95  54  22  87 191 204   8   4  26  84  16 181  30  20
+##  [91]  64 189  34  83  86  33 188 187 193 203  85 194  29 109  21 112 113  63
+## [109] 121 125 120 119 124   1  46  47 118   5  45 100  72  88 147  65  42 136
+## [127] 149  73 150  18 151 183  35  14 192  89 190 185 206   2 142 138  43   7
+## [145]  79 153  39 107 123 106  40  57 116 127 105 197  50 102 180
 ## 
 ## [[3]][[2]]
-##  [1] 169  15 166 179 164 177  37 172 162 175 168 178  55 165 163  90  66  58  76
-## [20]  23   3 171 180  11 176 157  77  85 174 155  89  29  14 158 159  35   1   2
-## [39]  47 167   5  46  45 100  79 156  40 173 170 161 160  57
+##  [1]  75  52 157 172  53 171 176  70 170  78 165  44 156 159  81 164 173  11   3
+## [20]  82 162  37  77  23 161 178  17  76 168 155  55  66 166 101  28 163 175  93
+## [39] 160 174  92  48  68 169  32 177 167
 ## 
 ## 
 ## [[4]]
 ## [[4]][[1]]
-##   [1] 134  75 147  71 135 141  52 152 144  81  78  44 137 131 133 146 132 150
-##  [19]  41 111  53  12 112  31  70  19  99 169  15 166 179 164 177  37 172 162
-##  [37] 175 168 178  55 165 163  90  66  58  76  23   3 171 180  11 176 157  77
-##  [55] 107  69 118 108 124 116  17 123 106 142 149  48  68 143 138 136 154 151
-##  [73]  49 109 128 122  60  67 119 120 110  95  93  92  26  34  32 125 103  87
-##  [91]  33 115  63  21 126 127 113  54  18  84  22  20  16   4  30  83 153  42
-## [109]   8  73  86  64  85 174 155  89  29  14 158 159  35   1   2  47 167   5
-## [127]  46  45 100  79 156  88  65 114  72 104 105 117 121  50 139  43 129 130
-## [145] 148   7 140 145  40 173 170 161 160  57
+##   [1] 130 154 146 137 141  36 140 133  74  56 134  24 132  75  52 157 172  53
+##  [19] 171 176  70 170  78 165  44 156 159  81 164 122  97 104 126  94  80  10
+##  [37]  12  61 131  19  31 145   6  59  99  15 110 128 111 117 114 173  11   3
+##  [55]  82 162  37  77  27 108   9  13  90  25 115  91  62  96  38  51  58  69
+##  [73]  23 161 178  17  76 168 155  55  66 166 101  28 163 175  93 160 174  92
+##  [91]  48  68 169  32 177 167 135 143 139  60 144 129  67 148 152 109  21 112
+## [109] 113  63 121 125 120 119 124   1  46  47 118   5  45 100  72  88 147  65
+## [127]  42 136 149  73 150  18 151   2 142 138  43   7  79 153  39 107 123 106
+## [145]  40  57 116 127 105
 ## 
 ## [[4]][[2]]
-##  [1] 199 190 189  36 184 192  24 205 200 194  56 203 204 193 195 188  74 182 183
-## [20] 181 187 186 206   6 198 197 196  94  80  27  61  59  13  91  38  10  97  96
-## [39]   9  62  25  51 185  98  82 202  28 201 191 101  39 102</code></pre>
+##  [1] 202  71 201 179 186 198  41 200 195 199  98 184 158 205  49 182 196 103  95
+## [20]  54  22  87 191 204   8   4  26  84  16 181  30  20  64 189  34  83  86  33
+## [39] 188 187 193 203  85 194  29 183  35  14 192  89 190 185 206 197  50 102 180</code></pre>
 <p>As we can see, we have 4 folds In each of these we have our training
 data [[1]] and our testing data [[2]]. Also, as you can see from the
 console output, the training/testing split is approximately 70%
@@ -888,9 +1013,9 @@ set.seed(1)
 rf_sbcv &lt;- train(method = &#39;RF&#39;, data = SWDdata, folds = spat_blocks2)</code></pre>
 <pre class="r"><code># Check the overall AUC and TSS values
 paste0(&#39;Testing AUC: &#39;, round(SDMtune::auc(rf_sbcv, test = TRUE),2))</code></pre>
-<pre><code>## [1] &quot;Testing AUC: 0.78&quot;</code></pre>
+<pre><code>## [1] &quot;Testing AUC: 0.75&quot;</code></pre>
 <pre class="r"><code>paste0(&#39;Testing TSS: &#39;, round(SDMtune::tss(rf_sbcv, test = TRUE),2))</code></pre>
-<pre><code>## [1] &quot;Testing TSS: 0.55&quot;</code></pre>
+<pre><code>## [1] &quot;Testing TSS: 0.42&quot;</code></pre>
 <pre class="r"><code># Extract the ROC curve and AUC values for each model
 source(&#39;scripts/functions/extract_roc_vals.R&#39;)</code></pre>
 <pre><code>## Loading required package: pROC</code></pre>
