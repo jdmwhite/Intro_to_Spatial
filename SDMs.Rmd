@@ -10,6 +10,15 @@ output:
     theme: paper
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r klippy, echo=FALSE, include=TRUE}
+klippy::klippy(position = c('top','right'))
+```
+
+
 Note: thank you to Geethen Singh for an earlier version of this practical.
 
 ### Learning objectives
@@ -176,10 +185,18 @@ Of these 19 different bioclimatic variables, several of them provide us with ver
 # Using Pearson correlation
 cov_colin <- correct_colinvar(covariates, method = c('pearson', th = "0.7"))
 # Take a look at the correlations using corrplot
+corrplot(cov_colin$cor_table, tl.cex = 0.6)
+```
+
+It is a baseplot output, so save it to file using a graphics function, such as `pdf()`. Remember to turn the plotting device off using `dev.off()`.
+
+```{r}
 pdf('output/figs/SDM/corr_plot.pdf', width = 8, height = 6)
 corrplot(cov_colin$cor_table, tl.cex = 0.6)
 dev.off()
+
 ```
+
 
 ```{r}
 # Show which variables are correlated
@@ -253,7 +270,7 @@ spat_range <- spatialAutoRange(
 
 This suggests a value of approximately 120 km as an appropriate size for our spatial blocks. We can now assign these blocks to k different spatial folds. In this case, we chose k = 4 folds as we have a limited amount of locality points. 
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 # We can now create our spatial folds (k) for later cross-validation
 # set the random seed, so this the output is the same across machines
 k = 4
@@ -269,7 +286,7 @@ spat_blocks1 <- spatialBlock(
 )
 ```
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 ggsave('output/figs/SDM/spatial_block.png',
        width = 6, height = 5, dpi = 'retina', bg = 'white')
 ```
@@ -385,16 +402,20 @@ We will run two different types of models. First one using random folds (i.e. no
 
 For both sets of models, we will use the default settings for a random forest. Many modeling exercises may suggest hyper-parameter tuning, which means trying out several iterations of the settings until finding the best settings for our data. Read up more on how to implement this in [SDMtune](https://consbiol-unibern.github.io/SDMtune/articles/articles/tune-hyperparameters.html).
 
+Both models use the `SDMtune::train()` function. We need to specify the type of model want to use (run `?SDMtune::train()` to view the other model methods), our `SWDdata` and our fold structure. It will then train our model on each training set for each of our folds, which will result in four separate model outputs.
+
 #### RandomForest with random folds
 
 ```{r}
 # We can now fit our models! Let's first create random folds so that we can compare the output with the spatial blocking folds
-rand_folds <- randomFolds(SWDdata, k = 4, only_presence = TRUE, seed = 1)
+rand_folds <- randomFolds(SWDdata, k = 4, seed = 1)
 
 # Run a RandomForest model with default setting and random folds
 set.seed(1)
 rf_randcv <- train(method = 'RF', data = SWDdata, folds = rand_folds)
 ```
+
+We can then run evaluation metrics across each of the four models using our testing data. We will be using the Area Under Curve (AUC) and True Skill Statistic (TSS) to evaluate our model performance. As we have 4 folds, this is an average value across all 4 models. AUC values range from 0 to 1 (with 0.5 being no better than chance). TSS values range from -1 to 1 (with 0 being no better than chance).
 
 ```{r}
 # Check the overall AUC and TSS values
@@ -402,9 +423,15 @@ paste0('Testing AUC: ', round(SDMtune::auc(rf_randcv, test = TRUE),2))
 paste0('Testing TSS: ', round(SDMtune::tss(rf_randcv, test = TRUE),2))
 ```
 
+This model performs really well, with an AUC of 0.86 and TSS of 0.64. However, we have not accounted for the spatial clustering/distribution of our points.
+
 ##### RandomForest with spatial folds
 
-```{r}
+When we first ran the `blockCV::spatialBlock()` function, we only used presence points and then used to spatial blocks to proportionately stratify our pseudo-absence data. This meant that there was no pseudo-absence data included in the `spat_blocks1` output. So we will run this function again, this time including the pseudo-absences.
+
+However, we will make sure that we use our previously **predefined spatial blocks** - meaning there will be no change in the spatial block numbering or spatial distribution. All it does is assign a block value to both the presence *and* pseudo-absences.
+
+```{r, message=FALSE, warning=FALSE}
 # Our initial spatial blocking did not include the pseudo-absence data, so let's re-run the spatialBlock function to include both presence (1) and pseudo-absences (0)
 # we can now use our previously predefined blocks
 spat_blocks2 <- spatialBlock(speciesData = st_as_sf(bind_rows(protea_filt_pres, pa), coords = c('lon','lat'), crs = crs(cov_clean)), 
@@ -421,11 +448,15 @@ spat_blocks2$folds
 
 As we can see, we have 4 folds In each of these we have our training data [[1]] and our testing data [[2]]. Also, as you can see from the console output, the training/testing split is approximately 70% training, 30% testing.
 
+We can now run our random forest model with the spatial blocks/folds. 
+
 ```{r}
 # Run a RandomForest model with default setting and spatial folds
 set.seed(1)
 rf_sbcv <- train(method = 'RF', data = SWDdata, folds = spat_blocks2)
 ```
+
+Run the model evaluation metrics:
 
 ```{r}
 # Check the overall AUC and TSS values
@@ -433,13 +464,19 @@ paste0('Testing AUC: ', round(SDMtune::auc(rf_sbcv, test = TRUE),2))
 paste0('Testing TSS: ', round(SDMtune::tss(rf_sbcv, test = TRUE),2))
 ```
 
-```{r}
+As you can see, our evaluation metrics suggest the spatial fold models perform poorer (AUC = 0.75; TSS = 0.42) than the random fold models (AUC = 0.86; TSS = 0.64). What's important to note though is that this is a far more realistic output. 
+
+We can also extract the individual AUC results and overall Receiver Operator Charateristic (ROC) curve for each of the 4 folds/models. To do this, we will load in custom functions from source to calculate the specificity and sensitivity scores and AUC for each model:
+
+```{r, message=FALSE, warning=FALSE}
 # Extract the ROC curve and AUC values for each model
 source('scripts/functions/extract_roc_vals.R')
 spec_sens_vals <- extract_spec_sens_vals(rf_sbcv, spat_blocks2, SWDdata)
 auc_vals <- extract_auc_vals(rf_sbcv, spat_blocks2, SWDdata)
 auc_vals$label <- paste0(auc_vals$model_no, ": ", round(auc_vals$auc,2))
 ```
+
+We can now plot out each ROC curve together with its AUC score.
 
 ```{r}
 # ROC curves with AUC values for each model 
@@ -464,17 +501,15 @@ ggsave('output/figs/SDM/rf_sbcv_auc_plot.png',
 
 #### Variable importance
 
-```{r}
-# VI for the random fold RF model
-vi_rf_randcv <- varImp(rf_randcv)
-plotVarImp(vi_rf_randcv)
-```
+To determine which environmental covariates had the greatest influence on the modeled distribution of our species, we can use calculate the variable importance. There are many ways to do this and different models have different approaches (e.g. jackknife with MaxEnt). This function randomly permutes one variable at a time and calculates the decrease in training AUC values. The results are normalised to percentages. 
 
 ```{r}
 # VI for the spatial fold RF model
 vi_rf_sbcv <- varImp(rf_sbcv)
 plotVarImp(vi_rf_sbcv)
 ```
+
+These results suggest that the *Max temp. of the warmest month* and *Annual precipitation* are the most important variables in our model. Remember to consider the collinearity relationships with the variables we excluded earlier. For example mean_t_warm_q (0.96), mean_t_wet_q (0.95), mean_t_dry_q (0.88), mean_ann_t (0.87), etc. are all highly correlated with *Max temp. of the warmest month* and would likely provide a similar result!
 
 ```{r}
 ggsave('output/figs/SDM/rf_sbcv_vi.png',
@@ -483,10 +518,14 @@ ggsave('output/figs/SDM/rf_sbcv_vi.png',
 
 #### Response curves
 
-```{r}
-plotResponse(rf_sbcv, var = "ann_p", marginal = TRUE, rug = TRUE) + labs(x = 'Ann. precip.') +
-plotResponse(rf_sbcv, var = "max_t_warm_m", marginal = TRUE, rug = TRUE) + labs(x = 'Max. temp. warmest month')
+We can also plot out the non-linear response of our species to each environmental covariate when all other variables are set to their mean values (we can change this to other summary values using `fun = `). Let's take a look at our top 2 variables. 
+
+```{r fig.height=4, fig.width=10}
+plotResponse(rf_sbcv, var = "max_t_warm_m", marginal = TRUE, rug = TRUE) + labs(x = 'Max. temp. warmest month') +
+plotResponse(rf_sbcv, var = "ann_p", marginal = TRUE, rug = TRUE) + labs(x = 'Ann. precip.') 
 ```
+
+These outputs suggest that Protea roupelliae is far more likely to be found at lower maximum temperatures in the warmest month (i.e. it doesn't like extreme heat) and higher annual precipitation (i.e. it prefers wetter areas). The confidence intervals
 
 ```{r}
 ggsave('output/figs/SDM/rf_sbcv_response_curves.png',
@@ -501,10 +540,14 @@ We can now predict which areas appear most suitable to our target species across
 pred <- predict(rf_sbcv, data = raster::stack(cov_clean))
 ```
 
+`SDMtune` has a handy `plotPred()` function, which can quickly provide us with a neat output.
+
 ```{r}
 # using the SMDtune::plotPred can give us a nice quick map
 plotPred(pred, lt = "Habitat\nsuitability", colorramp = c("#2c7bb6", "#abd9e9", "#ffffbf", "#fdae61", "#d7191c"))
 ```
+
+However, if we want to customise this map, we can convert the predicted output to a data frame and plot it manually in `ggplot2`.
 
 ```{r}
 # We can also customise this further in ggplot if we like

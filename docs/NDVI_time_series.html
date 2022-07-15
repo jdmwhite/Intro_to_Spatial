@@ -341,7 +341,7 @@ div.tocify {
   <a href="SDMs.html">SDMs</a>
 </li>
 <li>
-  <a href="extras.html">Extras</a>
+  <a href="Extras.html">Extras</a>
 </li>
 <li>
   <a href="Resources.html">Additional Resources</a>
@@ -613,7 +613,7 @@ jhb_ndvi &lt;- mt_subset(product = &quot;VNP13A1&quot;,
 <pre class="r"><code>end_time &lt;- Sys.time()
 # How long does it take to download 200 km2 of VIIRS NDVI data at 500 m resolution for 2 bands?
 end_time - start_time</code></pre>
-<pre><code>## Time difference of 1.285192 mins</code></pre>
+<pre><code>## Time difference of 1.274783 mins</code></pre>
 <p>Impressively, this only took 1.5 minutes to download 46 images overe
 200 km2. An interesting feature of the <code>MODISTools</code> package,
 is that it downloads data as a <code>data.frame</code>. This makes it
@@ -632,10 +632,8 @@ jhb_ndvi %&gt;%
   group_by(calendar_date) %&gt;%
   summarise(doy = yday(as_date(calendar_date)),
             ndvi_median = median(value * as.numeric(scale))) %&gt;% 
-  distinct(doy, .keep_all = TRUE) -&gt; jhb_med_ndvi</code></pre>
-<pre><code>## `summarise()` has grouped output by &#39;calendar_date&#39;. You can override using the
-## `.groups` argument.</code></pre>
-<pre class="r"><code>head(jhb_med_ndvi)</code></pre>
+  distinct(doy, .keep_all = TRUE) -&gt; jhb_med_ndvi
+head(jhb_med_ndvi)</code></pre>
 <pre><code>## # A tibble: 6 × 3
 ## # Groups:   calendar_date [6]
 ##   calendar_date   doy ndvi_median
@@ -652,8 +650,7 @@ ggplot(jhb_med_ndvi, aes(x = doy, y = ndvi_median)) +
   geom_smooth(method = &#39;loess&#39;) +
   labs(x = &#39;Day of Year&#39;, y = &#39;NDVI (median)&#39;) +
   theme_classic() </code></pre>
-<pre><code>## `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
-<p><img src="NDVI_time_series_files/figure-html/summarise%20data-1.png" width="672" /></p>
+<p><img src="NDVI_time_series_files/figure-html/summarise%20data-1.png" width="960" /></p>
 <p>In very few lines of code - we already have a time series plot!</p>
 <p>This clearly shows the seasonal pattern of the (southern hemisphere)
 summer rainfall pattern of Johannesburg. The NDVI peaks in
@@ -862,10 +859,7 @@ cities_ndvi %&gt;%
     labs(x = &#39;Day of Year&#39;, y = &#39;NDVI (median)&#39;) +
     theme_classic() +
     facet_grid(cols = vars(site))</code></pre>
-<pre><code>## `summarise()` has grouped output by &#39;site&#39;, &#39;calendar_date&#39;. You can override
-## using the `.groups` argument.
-## `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
-<p><img src="NDVI_time_series_files/figure-html/plot%20batch-1.png" width="672" /></p>
+<p><img src="NDVI_time_series_files/figure-html/plot%20batch-1.png" width="960" /></p>
 <p>And remember to save the plot:</p>
 <pre class="r"><code># Save plot
 ggsave(&#39;output/figs/ndvi_time_series/cities_med_ndvi.png&#39;,
@@ -882,19 +876,11 @@ Scroll down to the bonus section to see how this can be done:</p>
 # Bonus - animate your NDVI rasters
 # requires additional packages
 # install.packages(c(&#39;gganimate&#39;,&#39;magick&#39;))
-library(gganimate)</code></pre>
-<pre><code>## 
-## Attaching package: &#39;gganimate&#39;</code></pre>
-<pre><code>## The following object is masked from &#39;package:terra&#39;:
-## 
-##     animate</code></pre>
-<pre class="r"><code>library(magick)</code></pre>
-<pre><code>## Linking to ImageMagick 6.9.12.3
-## Enabled features: cairo, fontconfig, freetype, heic, lcms, pango, raw, rsvg, webp
-## Disabled features: fftw, ghostscript, x11</code></pre>
-<pre class="r"><code>library(sf)</code></pre>
-<pre><code>## Linking to GEOS 3.10.2, GDAL 3.4.2, PROJ 8.2.1; sf_use_s2() is TRUE</code></pre>
-<pre class="r"><code># Just for speed we&#39;ll aggregate the raster data
+library(gganimate)
+library(magick)
+library(sf)
+
+# Just for speed we&#39;ll aggregate the raster data
 ndvi_rast_agg &lt;- aggregate(jhb_ndvi_rasts, 5)
 # Convert it to a data frame and pivot to a long df
 rast_df &lt;- as.data.frame(ndvi_rast_agg, xy = T) %&gt;% pivot_longer(cols = 3:48, names_to = &#39;Date&#39;, values_to = &#39;NDVI&#39;)

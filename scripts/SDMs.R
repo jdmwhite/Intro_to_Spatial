@@ -226,7 +226,7 @@ SWDdata@data <- SWDdata@data[-1]
 ###___________________________###
 # RandomForest with random folds
 ###___________________________###
-rand_folds <- randomFolds(SWDdata, k = 4, only_presence = TRUE, seed = 1)
+rand_folds <- randomFolds(SWDdata, k = 4, seed = 1)
 
 # Run a RandomForest model with default setting and random folds
 set.seed(1)

@@ -10,6 +10,14 @@ output:
     theme: paper
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r klippy, echo=FALSE, include=TRUE}
+klippy::klippy(position = c('top','right'))
+```
+
 ### Introduction
 
 There are some spatial data related questions that I get commonly asked. These include how to extract raster data by different types of vectors and how to load a netCDF file into R. I have included two short tutorials below to show how these are done: 

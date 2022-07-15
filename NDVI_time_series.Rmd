@@ -144,7 +144,7 @@ Impressively, this only took 1.5 minutes to download 46 images overe 200 km2. An
 
 Our aim is to produce a single median NDVI value for each unique date and plot it. Importantly, we need to rescale the NDVI data using the value in the `scale` column.
 
-```{r summarise data}
+```{r summarise data, fig.height=4, fig.width=10, message=F}
 # Summarise
 jhb_ndvi %>% 
   filter(band == "500_m_16_days_NDVI") %>%
@@ -309,7 +309,7 @@ For the amount of data we are downloading this works amazingly quickly!
 
 We can then summarise the data by city (site) and the date (calendar_date) and pipe `%>%` this directly into a `ggplot()`. Note that we use `facet_grid(cols = vars(site))` in the `ggplot()` to create a separate plot for each city.
 
-```{r plot batch}
+```{r plot batch, fig.height=4, fig.width=10, message=F}
 # Summarise the values by site and date and pipe this directly into a ggplot call
 # Use facets to display a smoothed NDVI curve for each site
 cities_ndvi %>%
@@ -337,7 +337,7 @@ That is essentially the end of the learning objectives for this tutorial. Howeve
 
 #### Animate time series
 
-```{r}
+```{r message=F, warning=FALSE}
 # Animate ----
 # Bonus - animate your NDVI rasters
 # requires additional packages
@@ -402,7 +402,7 @@ for(i in 2:100){
 combined_gifs
 ```
 
-```{r}
+```{r, message = F}
 # Save combined gifs
 image_write_gif(
   image = combined_gifs,

@@ -10,6 +10,15 @@ output:
     theme: paper
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r klippy, echo=FALSE, include=TRUE}
+klippy::klippy(position = c('top','right'))
+```
+
+
 Note: thank you to Geethen Singh for an earlier version of this practical.
 
 ### Learning objectives
