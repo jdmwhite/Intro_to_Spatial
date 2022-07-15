@@ -6,8 +6,11 @@
 # install.packages('remotes')
 # devtools::install_github("sjevelazco/flexsdm")
 # Select 3 and then No
+# install.packages('corrplot')
+# install.packages('blockCV')
+# install.packages('SDMtune')
 
-#### Load libraries ----
+# #### Load libraries ----
 library(terra) # raster manipulation
 library(rnaturalearth) # country boundaries
 library(tidyverse) # data manipulation and plotting
@@ -23,12 +26,13 @@ library(patchwork) # combine ggplots
 protea <- vect("output/files/making_a_map/p_roup_gbif.shp")
 # download and load SA boundary
 sern_a <- ne_countries(scale = 'medium', country = c('South Africa', 'Lesotho', 'Swaziland'), returnclass = 'sf')
+# dissolve to outer boundary
 sern_a %>% group_by(level) %>% summarise() %>% vect() -> sern_a_dissolve
 # Download bioclim data
-r <- rast(raster::getData("worldclim",var="bio",res=5))
+# r <- rast(raster::getData("worldclim",var="bio",res=5))
 # returns 19 variables
 # or alternatively load from disk
-# r <- rast("data/sdm/worldclim.tif")
+r <- rast("data/sdm/worldclim.tif")
 
 #### Visualise raw data ----
 plot(r[[1]])
@@ -229,7 +233,7 @@ spat_blocks2 <- spatialBlock(speciesData = st_as_sf(bind_rows(protea_filt_pres, 
                    rasterLayer = raster::raster(cov_clean)[[1]], 
                    selection = 'predefined',
                    k = 4,
-                   blocks = SB$blocks,
+                   blocks = spat_blocks1$blocks,
                    foldsCol = "folds",
                    seed = 101) 
 # View the output
@@ -277,7 +281,7 @@ plotResponse(rf_sbcv, var = "max_t_warm_m", marginal = TRUE, rug = TRUE) + labs(
 
 #### Model prediction ----
 # We can now predict which areas appear most suitable to our target species across our full area of interest using  predict() and our environmental layers
-pred <- predict(rf_randcv, data = raster::stack(cov_clean))
+pred <- predict(rf_sbcv, data = raster::stack(cov_clean))
 
 # using the SMDtune::plotPred can give us a nice quick map
 plotPred(pred, lt = "Habitat\nsuitability", colorramp = c("#2c7bb6", "#abd9e9", "#ffffbf", "#fdae61", "#d7191c"))
