@@ -299,3 +299,7 @@ And then save this output to html, which can be easily shared our embedded in we
 mapshot(m, "output/figs/land_cover_change/interactive_map.html")
 ```
 
+#### Extra resources for land cover change in R
+
+The [`terra` chapter](https://rspatial.org/terra/modis/index.html) in the [rspatial book](https://rspatial.org/) has lots of excellent tutorials on the theory and application of the `terra` package in R. The UN commissions have [guides](https://www.unescap.org/resources/producing-land-cover-change-maps-and-statistics-step-step-guide-use-qgis-and-rstudio) for producing land cover maps, which could be adapted to your own goals.
+

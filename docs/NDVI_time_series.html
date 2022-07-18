@@ -332,10 +332,10 @@ div.tocify {
   <a href="Making_a_map.html">Making a map</a>
 </li>
 <li>
-  <a href="NDVI_time_series.html">NDVI time series</a>
+  <a href="Land_cover_change.html">Land cover change</a>
 </li>
 <li>
-  <a href="Land_cover_change.html">Land cover change</a>
+  <a href="NDVI_time_series.html">NDVI time series</a>
 </li>
 <li>
   <a href="SDMs.html">SDMs</a>
@@ -613,7 +613,7 @@ jhb_ndvi &lt;- mt_subset(product = &quot;VNP13A1&quot;,
 <pre class="r"><code>end_time &lt;- Sys.time()
 # How long does it take to download 200 km2 of VIIRS NDVI data at 500 m resolution for 2 bands?
 end_time - start_time</code></pre>
-<pre><code>## Time difference of 1.274783 mins</code></pre>
+<pre><code>## Time difference of 1.342296 mins</code></pre>
 <p>Impressively, this only took 1.5 minutes to download 46 images overe
 200 km2. An interesting feature of the <code>MODISTools</code> package,
 is that it downloads data as a <code>data.frame</code>. This makes it
@@ -953,7 +953,11 @@ lots of excellent tutorials on the theory and application of the
 <code>MODISTools</code> <a
 href="https://jepsonnomad.github.io/tutorials/MODISTools_Intro.html">here</a>
 and <a
-href="https://onlinelibrary.wiley.com/doi/10.1002/ece3.1273">here</a></p>
+href="https://onlinelibrary.wiley.com/doi/10.1002/ece3.1273">here</a>.</p>
+<p>For access to a much broader collection of remote sensing data you
+may consider going through the <a
+href="https://github.com/r-spatial/rgee"><code>rgee</code> package</a>,
+which links together R and Google Earth Engine.</p>
 </div>
 </div>
 

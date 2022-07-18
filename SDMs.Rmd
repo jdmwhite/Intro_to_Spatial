@@ -573,3 +573,8 @@ ggsave('output/figs/SDM/rf_sbcv_hab_suit.png',
        width = 6, height = 6, dpi = 'retina', bg = 'white')
 ```
 
+#### Extra resources for species distribution models in R
+
+The [rspatial](https://rspatial.org/terra/sdm/index.html) notebook has good resources on basic SDMs in R. The [blockCV package](https://github.com/rvalavi/blockCV) has good resources for using of cross-validation in spatial models and an accompanying [methods paper](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.13107).
+
+Both the [flexsdm](https://sjevelazco.github.io/flexsdm/index.html) and [SDMtune](https://consbiol-unibern.github.io/SDMtune/index.html) have useful webpages for understanding more about their respective functions and workflows.

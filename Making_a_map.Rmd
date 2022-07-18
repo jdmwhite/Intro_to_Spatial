@@ -83,7 +83,7 @@ That covers the basics. For a fuller explanation of these basics, please visit t
 # install.packages('CoordinateCleaner')
 # install.packages('rnaturalearth')
 # install.packages('sf')
-# install.packages('leaflet')
+# install.packages('mapview')
 # install.packages('ggspatial')
 # install.packages('patchwork')
 
@@ -92,7 +92,7 @@ library(rgbif)
 library(CoordinateCleaner)
 library(rnaturalearth)
 library(sf)
-library(leaflet)
+library(mapview)
 library(ggspatial)
 library(patchwork)
 

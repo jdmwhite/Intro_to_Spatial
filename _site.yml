@@ -6,10 +6,10 @@ navbar:
       href: index.html
     - text: 'Making a map'
       href: Making_a_map.html
-    - text: 'NDVI time series'
-      href: NDVI_time_series.html
     - text: 'Land cover change'
       href: Land_cover_change.html
+    - text: 'NDVI time series'
+      href: NDVI_time_series.html
     - text: 'SDMs'
       href: SDMs.html
     - text: 'Extras'

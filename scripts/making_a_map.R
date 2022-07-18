@@ -4,7 +4,7 @@
 # install.packages('CoordinateCleaner')
 # install.packages('rnaturalearth')
 # install.packages('sf')
-# install.packages('leaflet')
+# install.packages('mapview')
 # install.packages('ggspatial')
 # install.packages('patchwork')
 
@@ -13,7 +13,7 @@ library(rgbif)
 library(CoordinateCleaner)
 library(rnaturalearth)
 library(sf)
-library(leaflet)
+library(mapview)
 library(ggspatial)
 library(patchwork)
 
@@ -102,17 +102,7 @@ base_plot1 +
   geom_sf(data = pr_WGS_84, size = 0.8) 
 
 # Some of these points look a bit strange. It is always good to inspect these to see if they may be an issue later. We can make a simple interactive map to explore this...
-# First we want to add lon and lat as variables to our sf object
-pr_WGS_84$lon <- pr_clean$lon
-pr_WGS_84$lat <- pr_clean$lat
-
-pal <- colorFactor(
-  palette = c('red', 'blue'),
-  domain = pr_WGS_84$basisOfRecord
-)
-
-leaflet(data = pr_WGS_84) %>% addTiles() %>%
-  addCircleMarkers(popup = ~as.character(paste0(basisOfRecord, '; ', year, '; ', lon, '; ', lat)), radius = 5, color = ~pal(basisOfRecord))
+mapview(pr_WGS_84)
 
 # you should notice when you zoom in that many points are too regularly spaced to be exact locations of species sightings; rather, such points are likely to be centroids of (relatively large) grid cells on which particular surveys were based. This is not necessarily a problem, but remember to adjust the spatial resolution of your analysis accordingly!
 

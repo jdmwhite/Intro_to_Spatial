@@ -412,4 +412,6 @@ image_write_gif(
 
 #### Extra resources for using NDVI in R
 
-The [`terra` chapter](https://rspatial.org/terra/modis/index.html) in the [rspatial book](https://rspatial.org/) has lots of excellent tutorials on the theory and application of the `terra` package in R. Find more information on `MODISTools` [here](https://jepsonnomad.github.io/tutorials/MODISTools_Intro.html) and [here](https://onlinelibrary.wiley.com/doi/10.1002/ece3.1273)
+The [`terra` chapter](https://rspatial.org/terra/modis/index.html) in the [rspatial book](https://rspatial.org/) has lots of excellent tutorials on the theory and application of the `terra` package in R. Find more information on `MODISTools` [here](https://jepsonnomad.github.io/tutorials/MODISTools_Intro.html) and [here](https://onlinelibrary.wiley.com/doi/10.1002/ece3.1273). 
+
+For access to a much broader collection of remote sensing data you may consider going through the [`rgee` package](https://github.com/r-spatial/rgee), which links together R and Google Earth Engine. 
