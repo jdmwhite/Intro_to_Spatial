@@ -98,7 +98,7 @@ library(patchwork)
 
 # # Alternative method to load many libraries
 # if(!require("pacman")) install.packages("pacman")
-# pacman::p_load(tidyverse, rgbif, CoordinateCleaner, rnaturalearth, sf, leaflet, ggspatial, patchwork)
+# pacman::p_load(tidyverse, rgbif, CoordinateCleaner, rnaturalearth, sf, mapview, ggspatial, patchwork)
 ```
 
 #### Downloading & cleaning species data from GBIF
@@ -217,12 +217,7 @@ base_plot1 +
 Some of these points look a bit strange. It is always good to inspect these to see if they may be an issue later. We can make a simple interactive map to explore this. We can use the `leaflet` package to make interactive maps. Let's include information on the date & type of the observation.
 
 ```{r leaflet interactive map, fig.align="center"}
-# First we want to add lon and lat as variables to our sf object
-pr_WGS_84$lon <- pr_clean$lon
-pr_WGS_84$lat <- pr_clean$lat
-
-leaflet(data = pr_WGS_84) %>% addTiles() %>%
-  addCircleMarkers(popup = ~as.character(paste0(basisOfRecord, '; ', year, '; ', lon, '; ', lat)), radius = 2)
+mapview(pr_WGS_84)
 ```
 
 #### Making a 'good' map

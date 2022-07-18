@@ -19,7 +19,7 @@ library(patchwork)
 
 # # Alternative method to load many libraries
 # if(!require("pacman")) install.packages("pacman")
-# pacman::p_load(tidyverse, rgbif, CoordinateCleaner, rnaturalearth, sf, leaflet, ggspatial, patchwork)
+# pacman::p_load(tidyverse, rgbif, CoordinateCleaner, rnaturalearth, sf, mapview, ggspatial, patchwork)
 
 #### Download species data from GBIF ----
 
@@ -76,7 +76,7 @@ ggplot() +
 base_plot1 <- ggplot() + # save the output of the map to an object
   geom_sf(data = sern_a) +
   scale_x_continuous(limits = c(16, 33)) +
-  scale_y_continuous(limits = c(-35, -22))
+  scale_y_continuous(limits = c(-35, -22)) 
 base_plot1 # print this object, we can now reuse 'base_plot1' and add to it later
 
 # Now we're focused in on South Africa, let's add the GBIF points to the map
