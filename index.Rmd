@@ -20,9 +20,9 @@ This short workshop for SAEON GSN will introduce you to spatial data and analysi
 
 1. Making a map
 
-2. NDVI time series
+2. Land cover change
 
-3. Land cover change
+3. NDVI time series
 
 4. Species distribution models
 

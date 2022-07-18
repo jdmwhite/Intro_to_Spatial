@@ -332,10 +332,10 @@ div.tocify {
   <a href="Making_a_map.html">Making a map</a>
 </li>
 <li>
-  <a href="NDVI_time_series.html">NDVI time series</a>
+  <a href="Land_cover_change.html">Land cover change</a>
 </li>
 <li>
-  <a href="Land_cover_change.html">Land cover change</a>
+  <a href="NDVI_time_series.html">NDVI time series</a>
 </li>
 <li>
   <a href="SDMs.html">SDMs</a>
@@ -526,12 +526,12 @@ in different formats, let’s now run the extraction:</p>
 pts_ext &lt;- terra::extract(wc, rand_pts)
 head(pts_ext)</code></pre>
 <pre><code>##   ID bio1 bio2 bio3 bio4 bio5 bio6
-## 1  1  265  134   64 2274  355  148
-## 2  2  262  157   48 5733  440  113
-## 3  3  233   94   72  984  294  164
-## 4  4  247  144   69 1074  348  140
-## 5  5  283  143   56 3838  406  152
-## 6  6  231  118   60 2250  326  130</code></pre>
+## 1  1  220   99   58 2032  299  131
+## 2  2  248  127   71  870  342  164
+## 3  3  204  160   62 2144  310   55
+## 4  4  210  167   48 6522  375   29
+## 5  5  273  153   55 3876  402  125
+## 6  6  251  123   66 1248  345  159</code></pre>
 <pre class="r"><code>rand_pts_ext &lt;- cbind(rand_pts, pts_ext)</code></pre>
 <pre class="r"><code># Convert to sf for plotting
 rand_pts_ext_sf &lt;- rand_pts_ext %&gt;% st_as_sf()
