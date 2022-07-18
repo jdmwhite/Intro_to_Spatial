@@ -12,7 +12,7 @@ output:
 
 ### Access all lecture slides
 
-* [Slides]()
+* [Slides](https://drive.google.com/drive/folders/1CKLUeDWe-tRv-bdytUpZsNxE1C66yLzr?usp=sharing)
 
 ### Where to ask questions?
 * The best place to find answers to your R problems is the internet. However, finding the most appropriate answer quickly is also a skill and will improve as your understanding of R grows. 
@@ -30,38 +30,35 @@ output:
   + [File naming](https://intro2r.com/file-names.html)
   + [Script comments](https://bookdown.org/ndphillips/YaRrr/a-brief-style-guide-commenting-and-spacing.html)
 
-#### Data wrangling
+#### Making a map
 
   + [dplyr cheatsheet - includes all other cheat sheets](https://www.rstudio.com/resources/cheatsheets/)
   + [more resources - blog to check out](https://towardsdatascience.com/7-data-wrangling-r-functions-for-your-next-data-science-project-in-under-5-minutes-d5a4ad55f99b)
-  + [importing data into R](https://intro2r.com/importing-data.html)
-
-#### Data visualisation
-
   + [ggplot2 cheatsheet](https://www.maths.usyd.edu.au/u/UG/SM/STAT3022/r/current/Misc/data-visualization-2.1.pdf) 
-  + [graph inspiration](https://r-graph-gallery.com/index.html)
-  + [facets](https://ggplot2.tidyverse.org/reference/facet_grid.html)
-  + [patchwork](https://patchwork.data-imaginist.com/index.html)
-
-#### Data analysis
-
-  + [Descriptive statistics](https://b-rodrigues.github.io/modern_R/descriptive-statistics-and-data-manipulation.html#going-beyond-descriptive-statistics-and-data-manipulation)
-  + [t.test using R](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/t.test)
-  + [More descriptive statistics resources](https://www.r-bloggers.com/2021/10/descriptive-statistics-in-r-3/)
+  + [sf cheatsheet](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwjeqYu_q4P5AhXNPOwKHRnwCH0QFnoECAkQAQ&url=https%3A%2F%2Fosf.io%2Fan6b5%2Fdownload&usg=AOvVaw09ewjLkH09woLaWECSkpJC)
+  + [importing data into R](https://intro2r.com/importing-data.html)
+  + [Making maps in R - Geocomputation in R](https://geocompr.robinlovelace.net/adv-map.html)
+  + [R-Spatial: Drawing beautiful maps](https://r-spatial.org/r/2018/10/25/ggplot2-sf.html)
   
-#### R Markdown & GitHub
+#### Land cover change
 
-**R Markdown**
+  + [All of the functions in terra](https://rdrr.io/github/rspatial/terra/man/terra-package.html)
+  + [OpenLand package: an alternative approach to what we explore](https://cran.r-project.org/web/packages/OpenLand/vignettes/openland_vignette.html)
 
-* [https://bookdown.org/yihui/rmarkdown/](https://bookdown.org/yihui/rmarkdown/)
-* [R Markdown Cheatsheet](https://raw.githubusercontent.com/rstudio/cheatsheets/main/rmarkdown-2.0.pdf)
-* [R Markdown Reference Guide](https://www.rstudio.com/wp-content/uploads/2015/03/rmarkdown-reference.pdf)
-* [R Markdown lessons with RStudio](https://rmarkdown.rstudio.com/lesson-1.html)
+#### NDVI time series
 
-**GitHub**
+  + [MODISTools package](https://jepsonnomad.github.io/tutorials/MODISTools_Intro.html)
+  + [MODISTools methods paper](https://onlinelibrary.wiley.com/doi/10.1002/ece3.1273)
+  + [luna package (an alternative to MODISTools)](https://rspatial.org/terra/modis/2-download.html)
+  + [rgee package (access way more remote sensing data through Google Earth Engine)](https://github.com/r-spatial/rgee)
+  
+#### Species distribution models
 
-* [happygitwithr](https://happygitwithr.com/)
-* [GitHub and RStudio](https://resources.github.com/github-and-rstudio/)
+  + [Basic Intro to SDMs in R - rspatial](https://rspatial.org/terra/sdm/index.html)
+  + [blockCV package](https://github.com/rvalavi/blockCV)
+  + [blockCV methods paper](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.13107)
+  + [flexsdm package](https://sjevelazco.github.io/flexsdm/index.html)
+  + [SDMtune package](https://consbiol-unibern.github.io/SDMtune/index.html)
 
 #### Understanding R errors/warnings
 
