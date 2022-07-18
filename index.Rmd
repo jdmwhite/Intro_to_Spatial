@@ -26,7 +26,7 @@ This short workshop for SAEON GSN will introduce you to spatial data and analysi
 
 4. Species distribution models
 
-If you have not used R before, I highly recommend going over the content provided in the [Basics of R workshop](https://jdmwhite.github.io/R_Workshop/) previously run with the SAEON GSN. Basic instructions on downloading R and R Studio can be found below.
+If you have not used R before, I highly recommend going over the content provided in the [Basics of R workshop](https://jdmwhite.github.io/R_Workshop/) previously run with the SAEON GSN. All lecture slides and recorded videos for this workshop can be found on the [SAEON GSN website](https://rise.articulate.com/share/7hNlrUkgZU0qaGvwpUO_2pJzOdPFe1vm#/). Basic instructions on downloading R and R Studio can be found below.
 
 ### Getting started
 
