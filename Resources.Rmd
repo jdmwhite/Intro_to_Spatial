@@ -10,9 +10,24 @@ output:
     theme: paper
 ---
 
+### Access the compiled contents of this course 
+
+SAEON GSN has kindly compiled this course into a neat educational resource on their webpage. Find the site [here](https://rise.articulate.com/share/NwjZOmKC3Qo0ROu4wtDIsArONNdjLyK_#/).
+
 ### Access all lecture slides
 
 * [Slides](https://drive.google.com/drive/folders/1CKLUeDWe-tRv-bdytUpZsNxE1C66yLzr?usp=sharing)
+
+### Access the R project with scripts
+
+* [Repository](https://github.com/jdmwhite/Intro_to_Spatial_Scripts)
+
+### Access the video recordings
+
+* [Intro & making a map](https://www.youtube.com/watch?v=sZS9tmHHXgM) 
+* [Land cover change](https://www.youtube.com/watch?v=sjmbUQJuqRs) 
+* [NDVI time series](https://www.youtube.com/watch?v=b0XYdyxp1zw) 
+* [Species distribution models](https://www.youtube.com/watch?v=XnecxgSkiMg)
 
 ### Where to ask questions?
 * The best place to find answers to your R problems is the internet. However, finding the most appropriate answer quickly is also a skill and will improve as your understanding of R grows. 
